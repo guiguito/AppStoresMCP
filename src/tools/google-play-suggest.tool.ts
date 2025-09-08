@@ -56,7 +56,8 @@ export class GooglePlaySuggestTool implements MCPTool {
       this.validateParams(params);
 
       // Fetch raw suggest data directly from google-play-scraper
-      const gplay = require('google-play-scraper').default || require('google-play-scraper');
+      const gplayModule = await import('google-play-scraper');
+      const gplay = gplayModule.default;
       
       const suggestOptions = {
         term: params.term,

@@ -95,7 +95,8 @@ export class GooglePlayListTool implements MCPTool {
       this.validateParams(params);
 
       // Fetch raw list data directly from google-play-scraper
-      const gplay = require('google-play-scraper').default || require('google-play-scraper');
+      const gplayModule = await import('google-play-scraper');
+      const gplay = gplayModule.default;
       
       const listOptions: any = {
         num: Math.min(params.num || 50, 100),
@@ -106,17 +107,17 @@ export class GooglePlayListTool implements MCPTool {
 
       // Add collection if specified
       if (params.collection) {
-        listOptions.collection = this.mapCollection(params.collection);
+        listOptions.collection = await this.mapCollection(params.collection);
       }
 
       // Add category if specified
       if (params.category) {
-        listOptions.category = this.mapCategory(params.category);
+        listOptions.category = await this.mapCategory(params.category);
       }
 
       // Add age if specified
       if (params.age) {
-        listOptions.age = this.mapAge(params.age);
+        listOptions.age = await this.mapAge(params.age);
       }
 
       const rawListData = await gplay.list(listOptions);
@@ -170,8 +171,9 @@ export class GooglePlayListTool implements MCPTool {
    * Map collection string to google-play-scraper collection constant
    * @private
    */
-  private mapCollection(collection: string): any {
-    const gplay = require('google-play-scraper').default || require('google-play-scraper');
+  private async mapCollection(collection: string): Promise<any> {
+    const gplayModule = await import('google-play-scraper');
+    const gplay = gplayModule.default;
     
     switch (collection) {
       case 'TOP_FREE':
@@ -189,20 +191,22 @@ export class GooglePlayListTool implements MCPTool {
    * Map category string to google-play-scraper category constant
    * @private
    */
-  private mapCategory(category: string): any {
-    const gplay = require('google-play-scraper').default || require('google-play-scraper');
+  private async mapCategory(category: string): Promise<any> {
+    const gplayModule = await import('google-play-scraper');
+    const gplay = gplayModule.default;
     
     // The category constants in google-play-scraper are the same as the string values
     // so we can directly use the category constant
-    return gplay.category[category] || category;
+    return (gplay.category as any)[category] || category;
   }
 
   /**
    * Map age string to google-play-scraper age constant
    * @private
    */
-  private mapAge(age: string): any {
-    const gplay = require('google-play-scraper').default || require('google-play-scraper');
+  private async mapAge(age: string): Promise<any> {
+    const gplayModule = await import('google-play-scraper');
+    const gplay = gplayModule.default;
     
     switch (age) {
       case 'FIVE_UNDER':

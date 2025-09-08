@@ -73,8 +73,9 @@ export class GooglePlaySearchTool implements MCPTool {
       // Validate input parameters
       this.validateParams(params);
 
-      // Fetch raw search results directly from google-play-scraper
-      const gplay = require('google-play-scraper').default || require('google-play-scraper');
+      // Fetch raw search results directly from google-play-scraper using dynamic import
+      const gplayModule = await import('google-play-scraper');
+      const gplay = gplayModule.default;
       
       const rawSearchResults = await gplay.search({
         term: params.query,

@@ -60,7 +60,8 @@ export class GooglePlayAppDetailsTool implements MCPTool {
       this.validateParams(params);
 
       // Fetch raw app details directly from google-play-scraper
-      const gplay = require('google-play-scraper').default || require('google-play-scraper');
+      const gplayModule = await import('google-play-scraper');
+      const gplay = gplayModule.default;
       
       const rawAppDetails = await gplay.app({
         appId: params.appId,
