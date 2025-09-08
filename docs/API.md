@@ -236,16 +236,18 @@ To get the next batch of reviews, use the `nextPaginationToken` from the previou
 }
 ```
 
+**Note**: When there are no more reviews to fetch, the `nextPaginationToken` field will be `null` or omitted from the response.
+
 ### google-play-search
 
-Search for apps in the Google Play Store.
+Search for apps in the Google Play Store. Returns up to 100 results per request (no pagination support).
 
 #### Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `query` | string | Yes | Search query (minimum 2 characters) |
-| `num` | integer | No | Number of results (1-100, default: 50) |
+| `num` | integer | No | Number of results (1-100, default: 50). No pagination available - increase this value to get more results. |
 | `lang` | string | No | Language code (default: "en") |
 | `country` | string | No | Country code (default: "us") |
 | `fullDetail` | boolean | No | Return full app details (default: false) |
@@ -290,7 +292,7 @@ Search for apps in the Google Play Store.
 
 ### google-play-list
 
-Get app lists from Google Play Store collections and categories.
+Get app lists from Google Play Store collections and categories. Returns up to 100 results per request (no pagination support).
 
 #### Parameters
 
@@ -299,7 +301,7 @@ Get app lists from Google Play Store collections and categories.
 | `collection` | string | No | Collection type. Available values: `TOP_FREE` (default), `TOP_PAID`, `GROSSING` |
 | `category` | string | No | Category name for filtering apps. Popular categories: `GAME`, `BUSINESS`, `EDUCATION`, `ENTERTAINMENT`, `FINANCE`, `HEALTH_AND_FITNESS`, `LIFESTYLE`, `MUSIC_AND_AUDIO`, `NEWS_AND_MAGAZINES`, `PHOTOGRAPHY`, `PRODUCTIVITY`, `SHOPPING`, `SOCIAL`, `SPORTS`, `TOOLS`, `TRAVEL_AND_LOCAL`, `WEATHER`. Full list includes 51 categories including game subcategories like `GAME_ACTION`, `GAME_ADVENTURE`, etc. |
 | `age` | string | No | Age rating filter. Available values: `FIVE_UNDER` (5 and under), `SIX_EIGHT` (6-8 years), `NINE_UP` (9+ years) |
-| `num` | integer | No | Number of results (1-100, default: 50) |
+| `num` | integer | No | Number of results (1-100, default: 50). No pagination available - increase this value to get more results. |
 | `lang` | string | No | Language code (default: "en") |
 | `country` | string | No | Country code (default: "us") |
 | `fullDetail` | boolean | No | Return full app details (default: false) |
@@ -343,7 +345,7 @@ Get app lists from Google Play Store collections and categories.
 
 ### google-play-developer
 
-Get all apps by a specific developer.
+Get all apps by a specific developer with token-based pagination support.
 
 #### Parameters
 
@@ -352,8 +354,31 @@ Get all apps by a specific developer.
 | `devId` | string | Yes | Developer ID or name |
 | `lang` | string | No | Language code (default: "en") |
 | `country` | string | No | Country code (default: "us") |
-| `num` | integer | No | Number of results (1-100, default: 50) |
+| `num` | integer | No | Number of results (1-100, default: 50). Use nextPaginationToken for additional pages. |
 | `fullDetail` | boolean | No | Return full app details (default: false) |
+| `nextPaginationToken` | string | No | Pagination token from previous response's "nextPaginationToken" field. Omit for first page. When null/missing in response, no more pages available. |
+
+#### Pagination Example
+
+To get the next batch of developer apps, use the `nextPaginationToken` from the previous response:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "dev-page-2",
+  "method": "tools/call",
+  "params": {
+    "name": "google-play-developer",
+    "arguments": {
+      "devId": "Google LLC",
+      "num": 20,
+      "nextPaginationToken": "CsEBIrgBAcgILLS5IDBgvTCYG4Xnpm31aqIVGkbk0JJ-HESltoGbgsCuKhk10ejIR7OuGu_MLQjpgkT6myAGLeo91cVdIrjzePqVzeQjXxIZ0PMFrTOXz07byRAmt5r7nrnU5IJjzcjei1xMVUmWhzm1hJ6dHe_PMV3m7hS9-mUkcADZLNg7Q21pfV_NUVjk94OBklhayMHzNRq4jdAJdU8j2Q9m_4AY4czYuagxa1hSptLzCVubtmwvqKT6BSiB8_fDBg"
+    }
+  }
+}
+```
+
+**Note**: When there are no more apps to fetch, the `nextPaginationToken` field will be `null` or omitted from the response.
 
 ### google-play-suggest
 
@@ -512,8 +537,9 @@ Get reviews for an Apple App Store app with pagination support.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `appId` | string | Yes | Apple App Store numeric ID |
+| `page` | integer | No | Page number for pagination (default: 1) |
+| `sort` | string | No | Sort order: "newest", "rating", "helpfulness" (default: "newest") |
 | `country` | string | No | Country code (default: "us") |
-| `sort` | string | No | Sort order: "mostRecent", "mostHelpful" (default: "mostRecent") |
 | `num` | integer | No | Number of reviews (1-100, default: 50) |
 
 #### Example Request
@@ -551,16 +577,38 @@ Get reviews for an Apple App Store app with pagination support.
 ]
 ```
 
+#### Pagination Example
+
+To get the next page of reviews, increment the `page` parameter:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "6",
+  "method": "tools/call",
+  "params": {
+    "name": "app-store-app-reviews",
+    "arguments": {
+      "appId": "310633997",
+      "page": 2,
+      "num": 10
+    }
+  }
+}
+```
+
+**Note**: When there are no more reviews on a page, an empty array `[]` will be returned.
+
 ### app-store-search
 
-Search for apps in the Apple App Store.
+Search for apps in the Apple App Store. Returns up to 100 results per request (no pagination support).
 
 #### Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `query` | string | Yes | Search query (minimum 2 characters) |
-| `num` | integer | No | Number of results (1-100, default: 50) |
+| `num` | integer | No | Number of results (1-100, default: 50). No pagination available - increase this value to get more results. |
 | `country` | string | No | Country code (default: "us") |
 
 #### Example Request
@@ -624,7 +672,7 @@ Search for apps in the Apple App Store.
 
 ### app-store-list
 
-Get app lists from Apple App Store collections and categories.
+Get app lists from Apple App Store collections and categories. Returns up to 100 results per request (no pagination support).
 
 #### Parameters
 
@@ -634,7 +682,7 @@ Get app lists from Apple App Store collections and categories.
 | `category` | string/integer | No | Category ID (number) or constant name (string). Popular categories: `GAMES` (6014), `BUSINESS` (6000), `EDUCATION` (6017), `ENTERTAINMENT` (6016), `FINANCE` (6015), `HEALTH_AND_FITNESS` (6013), `LIFESTYLE` (6012), `MUSIC` (6011), `NEWS` (6009), `PHOTO_AND_VIDEO` (6008), `PRODUCTIVITY` (6007), `SOCIAL_NETWORKING` (6005), `SPORTS` (6004), `TRAVEL` (6003), `UTILITIES` (6002), `WEATHER` (6001) |
 | `country` | string | No | Country code (default: "us") |
 | `lang` | string | No | Language code (default: "en") |
-| `num` | integer | No | Number of results (1-100, default: 50) |
+| `num` | integer | No | Number of results (1-100, default: 50). No pagination available - increase this value to get more results. |
 | `fullDetail` | boolean | No | Return full app details (default: false) |
 
 #### Example Request
@@ -1270,7 +1318,7 @@ Response:
 
 ## Best Practices
 
-1. **Use appropriate pagination** - Don't request more data than needed
+1. **Use appropriate pagination** - For tools with pagination support (reviews, developer apps), use pagination tokens/pages to get additional data. For search/list tools without pagination, increase the `num` parameter (up to 100) to get more results in a single request.
 2. **Handle raw data responses** - All tools return unmodified data from scraping libraries
 3. **Respect rate limits** - Implement backoff strategies and monitor rate limit headers
 4. **Cache responses** - App store data doesn't change frequently, cache when possible

@@ -23,7 +23,7 @@ interface GooglePlayAppReviewsParams {
  */
 export class GooglePlayAppReviewsTool implements MCPTool {
   public readonly name = 'google-play-app-reviews';
-  public readonly description = 'Get reviews for a Google Play Store app with pagination and sorting options';
+  public readonly description = 'Get reviews for a Google Play Store app with token-based pagination. Use nextPaginationToken from response for subsequent pages.';
 
   public readonly inputSchema: JSONSchema7 = {
     type: 'object',
@@ -42,7 +42,7 @@ export class GooglePlayAppReviewsTool implements MCPTool {
       },
       nextPaginationToken: {
         type: 'string',
-        description: 'Pagination token from previous response for getting next batch of reviews'
+        description: 'Pagination token from previous response\'s "nextPaginationToken" field. Omit for first page. When null/missing in response, no more pages available.'
       },
       sort: {
         type: 'string',
@@ -88,11 +88,13 @@ export class GooglePlayAppReviewsTool implements MCPTool {
         num: Math.min(params.num || 100, 150), // Limit to prevent excessive requests
         sort: await this.mapSortOption(params.sort),
         lang: params.lang || 'en',
-        country: params.country || 'us'
+        country: params.country || 'us',
+        paginate: true // Enable pagination
       };
 
-      if (params.nextPaginationToken) {
-        reviewsOptions.nextPaginationToken = params.nextPaginationToken;
+      // Only add nextPaginationToken if it's provided and not empty
+      if (params.nextPaginationToken && params.nextPaginationToken.trim()) {
+        reviewsOptions.nextPaginationToken = params.nextPaginationToken.trim();
       }
 
       const rawReviews = await gplay.reviews(reviewsOptions);

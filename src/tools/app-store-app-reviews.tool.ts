@@ -21,7 +21,7 @@ interface AppStoreAppReviewsParams {
  */
 export class AppStoreAppReviewsTool implements MCPTool {
   public readonly name = 'app-store-app-reviews';
-  public readonly description = 'Get reviews for an Apple App Store app with pagination and sorting options';
+  public readonly description = 'Get reviews for an Apple App Store app with page-based pagination. Increment page parameter for next page, empty array indicates end.';
 
   public readonly inputSchema: JSONSchema7 = {
     type: 'object',
@@ -33,7 +33,7 @@ export class AppStoreAppReviewsTool implements MCPTool {
       },
       page: {
         type: 'integer',
-        description: 'Page number for pagination (default: 1)',
+        description: 'Page number for pagination (default: 1). Increment to get next page. Empty array response indicates no more pages.',
         minimum: 1,
         default: 1
       },

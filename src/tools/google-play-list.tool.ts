@@ -24,7 +24,7 @@ interface GooglePlayListParams {
  */
 export class GooglePlayListTool implements MCPTool {
   public readonly name = 'google-play-list';
-  public readonly description = 'Get app lists from Google Play Store collections and categories';
+  public readonly description = 'Get app lists from Google Play Store collections and categories. Returns up to 100 results per request (no pagination support).';
 
   public readonly inputSchema: JSONSchema7 = {
     type: 'object',
@@ -60,7 +60,7 @@ export class GooglePlayListTool implements MCPTool {
       },
       num: {
         type: 'integer',
-        description: 'Number of results to return (default: 50, max: 100)',
+        description: 'Number of results to return (default: 50, max: 100). No pagination available - increase this value to get more results.',
         minimum: 1,
         maximum: 100,
         default: 50

@@ -20,7 +20,7 @@ interface AppStoreSearchParams {
  */
 export class AppStoreSearchTool implements MCPTool {
   public readonly name = 'app-store-search';
-  public readonly description = 'Search for apps in Apple App Store with customizable result count and region options';
+  public readonly description = 'Search for apps in Apple App Store. Returns up to 100 results per request (no pagination support).';
 
   public readonly inputSchema: JSONSchema7 = {
     type: 'object',
@@ -32,7 +32,7 @@ export class AppStoreSearchTool implements MCPTool {
       },
       num: {
         type: 'integer',
-        description: 'Number of search results to return (default: 50, max: 100)',
+        description: 'Number of search results to return (default: 50, max: 100). No pagination available - increase this value to get more results.',
         minimum: 1,
         maximum: 100,
         default: 50

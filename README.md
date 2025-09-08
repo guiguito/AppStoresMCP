@@ -72,8 +72,8 @@ The server exposes 19 comprehensive MCP tools for complete app store data access
 
 1. **`google-play-app-details`** - Get detailed app information including metadata, ratings, and descriptions
 2. **`google-play-app-reviews`** - Fetch app reviews with pagination and sorting options
-3. **`google-play-search`** - Search for apps with customizable result count and localization
-4. **`google-play-list`** - Get app lists from collections (TOP_FREE, TOP_PAID, NEW_FREE, etc.) and categories
+3. **`google-play-search`** - Search for apps (up to 100 results per request, no pagination)
+4. **`google-play-list`** - Get app lists from collections (TOP_FREE, TOP_PAID, NEW_FREE, etc.) and categories (up to 100 results per request, no pagination)
 5. **`google-play-developer`** - Get all apps by a specific developer with pagination
 6. **`google-play-suggest`** - Get search suggestions for app discovery
 7. **`google-play-similar`** - Find apps similar to a given app
@@ -85,8 +85,8 @@ The server exposes 19 comprehensive MCP tools for complete app store data access
 
 1. **`app-store-app-details`** - Get detailed app information including metadata, ratings, and descriptions
 2. **`app-store-app-reviews`** - Fetch app reviews with pagination and sorting options
-3. **`app-store-search`** - Search for apps with customizable result count and region options
-4. **`app-store-list`** - Get app lists from collections and categories
+3. **`app-store-search`** - Search for apps (up to 100 results per request, no pagination)
+4. **`app-store-list`** - Get app lists from collections and categories (up to 100 results per request, no pagination)
 5. **`app-store-developer`** - Get all apps by a specific developer
 6. **`app-store-privacy`** - Get detailed app privacy information and policies
 7. **`app-store-suggest`** - Get search suggestions for app discovery

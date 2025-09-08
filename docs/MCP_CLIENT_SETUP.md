@@ -317,10 +317,10 @@ Once configured, you should see 19 comprehensive tools available in your MCP cli
 
 **Google Play Store Tools (10 tools):**
 - `google-play-app-details` - Get detailed app information
-- `google-play-app-reviews` - Get app reviews with pagination
-- `google-play-search` - Search for apps
-- `google-play-list` - Get app lists from collections and categories
-- `google-play-developer` - Get all apps by a specific developer
+- `google-play-app-reviews` - Get app reviews with token-based pagination
+- `google-play-search` - Search for apps (up to 100 results, no pagination)
+- `google-play-list` - Get app lists from collections and categories (up to 100 results, no pagination)
+- `google-play-developer` - Get all apps by a specific developer with token-based pagination
 - `google-play-suggest` - Get search suggestions
 - `google-play-similar` - Find similar apps
 - `google-play-permissions` - Get app permissions information
@@ -329,9 +329,9 @@ Once configured, you should see 19 comprehensive tools available in your MCP cli
 
 **Apple App Store Tools (9 tools):**
 - `app-store-app-details` - Get detailed app information
-- `app-store-app-reviews` - Get app reviews with pagination
-- `app-store-search` - Search for apps
-- `app-store-list` - Get app lists from collections and categories
+- `app-store-app-reviews` - Get app reviews with page-based pagination
+- `app-store-search` - Search for apps (up to 100 results, no pagination)
+- `app-store-list` - Get app lists from collections and categories (up to 100 results, no pagination)
 - `app-store-developer` - Get all apps by a specific developer
 - `app-store-privacy` - Get app privacy information
 - `app-store-suggest` - Get search suggestions

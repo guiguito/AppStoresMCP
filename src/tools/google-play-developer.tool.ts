@@ -15,6 +15,7 @@ interface GooglePlayDeveloperParams {
   country?: string;
   num?: number;
   fullDetail?: boolean;
+  nextPaginationToken?: string;
 }
 
 /**
@@ -22,7 +23,7 @@ interface GooglePlayDeveloperParams {
  */
 export class GooglePlayDeveloperTool implements MCPTool {
   public readonly name = 'google-play-developer';
-  public readonly description = 'Get apps by developer from Google Play Store';
+  public readonly description = 'Get apps by developer from Google Play Store with token-based pagination. Use nextPaginationToken from response for subsequent pages.';
 
   public readonly inputSchema: JSONSchema7 = {
     type: 'object',
@@ -46,7 +47,7 @@ export class GooglePlayDeveloperTool implements MCPTool {
       },
       num: {
         type: 'integer',
-        description: 'Number of results to return (default: 50, max: 100)',
+        description: 'Number of results to return (default: 50, max: 100). Use nextPaginationToken for additional pages.',
         minimum: 1,
         maximum: 100,
         default: 50
@@ -55,6 +56,10 @@ export class GooglePlayDeveloperTool implements MCPTool {
         type: 'boolean',
         description: 'Whether to return full app details (default: false)',
         default: false
+      },
+      nextPaginationToken: {
+        type: 'string',
+        description: 'Pagination token from previous response\'s "nextPaginationToken" field. Omit for first page. When null/missing in response, no more pages available.'
       }
     },
     required: ['devId'],
@@ -78,8 +83,14 @@ export class GooglePlayDeveloperTool implements MCPTool {
         lang: params.lang || 'en',
         country: params.country || 'us',
         num: Math.min(params.num || 50, 100),
-        fullDetail: params.fullDetail || false
+        fullDetail: params.fullDetail || false,
+        paginate: true // Enable pagination
       };
+
+      // Only add nextPaginationToken if it's provided and not empty
+      if (params.nextPaginationToken && params.nextPaginationToken.trim()) {
+        developerOptions.nextPaginationToken = params.nextPaginationToken.trim();
+      }
 
       const rawDeveloperData = await gplay.developer(developerOptions);
 
@@ -118,6 +129,12 @@ export class GooglePlayDeveloperTool implements MCPTool {
     if (params.fullDetail && typeof params.fullDetail !== 'boolean') {
       throw new Error('fullDetail must be a boolean');
     }
+
+    if (params.nextPaginationToken !== undefined) {
+      if (typeof params.nextPaginationToken !== 'string' || params.nextPaginationToken.trim().length === 0) {
+        throw new Error('nextPaginationToken must be a non-empty string');
+      }
+    }
   }
 
   /**
@@ -132,7 +149,8 @@ export class GooglePlayDeveloperTool implements MCPTool {
       error.message.includes('lang must be a valid') ||
       error.message.includes('country must be a valid') ||
       error.message.includes('num must be a number') ||
-      error.message.includes('fullDetail must be a boolean')
+      error.message.includes('fullDetail must be a boolean') ||
+      error.message.includes('nextPaginationToken must be')
     )) {
       return {
         success: false,
