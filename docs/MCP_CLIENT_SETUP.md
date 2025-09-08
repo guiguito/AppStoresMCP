@@ -14,27 +14,39 @@ This guide explains how to configure MCP clients like Cursor, Windsurf, and othe
 
 ## Overview
 
-The App Store MCP Server implements the Model Context Protocol (MCP) over HTTP transport, making it compatible with various MCP clients. Unlike stdio-based MCP servers, this server runs as a standalone HTTP service that clients can connect to over the network.
+The App Store MCP Server is a **remote HTTP-based MCP server** that provides app store scraping functionality. It supports two transport protocols:
+
+1. **HTTP Transport** (Primary) - Direct MCP over HTTP
+2. **SSE Transport** (Enhanced compatibility) - Server-Sent Events for legacy clients
 
 ### Key Information
 
-- **Protocol**: MCP over HTTP (NOT WebSocket/Socket.IO)
+- **Server Type**: Remote HTTP server (not stdio-based)
+- **Primary Protocol**: MCP over HTTP with JSON-RPC 2.0
 - **Default URL**: `http://localhost:3000/mcp`
-- **Transport**: HTTP POST requests with JSON-RPC 2.0
+- **SSE Endpoint**: `http://localhost:3000/sse` (for compatible clients)
 - **Authentication**: None required (configurable CORS)
-- **Available Tools**: 6 app store scraping tools
+- **Available Tools**: 19 comprehensive app store scraping tools
 
-### ⚠️ Important Transport Note
+### Transport Support
 
-This server implements **MCP over HTTP**, not WebSocket or Socket.IO. If your MCP client is trying to connect via WebSocket (you'll see `/ws/socket.io/` in the logs), you need to use the HTTP proxy configuration below.
+- ✅ **HTTP Transport**: Native MCP over HTTP (recommended)
+- ✅ **SSE Transport**: Server-Sent Events with automatic initialization
+- ⚠️ **Stdio Support**: Available via external bridge utilities in `tools/` directory
+
+### ⚠️ Important Notes
+
+- This is a **remote server**, not a stdio-based MCP server
+- For stdio-only clients, use the bridge utilities in the `tools/` directory
+- The server must be running before connecting MCP clients
 
 ## Cursor IDE Setup
 
-Cursor IDE supports MCP servers through configuration files. Here's how to set it up:
+Cursor IDE supports MCP servers through configuration files. Since this is a remote HTTP server, you have two options:
 
-### 1. Create MCP Configuration
+### Option 1: Direct HTTP Configuration (Recommended)
 
-Create or edit your MCP configuration file:
+If Cursor supports direct HTTP MCP connections:
 
 **Location**: 
 - macOS: `~/Library/Application Support/Cursor/User/globalStorage/mcp.json`
@@ -46,55 +58,49 @@ Create or edit your MCP configuration file:
 {
   "mcpServers": {
     "app-store-mcp-server": {
-      "command": "node",
-      "args": ["-e", "require('http').createServer((req,res)=>{if(req.method==='POST'&&req.url==='/mcp'){let body='';req.on('data',chunk=>body+=chunk);req.on('end',()=>{const request=JSON.parse(body);fetch('http://localhost:3000/mcp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(request)}).then(r=>r.json()).then(data=>{res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify(data))}).catch(e=>{res.writeHead(500);res.end(JSON.stringify({error:e.message}))})});}else{res.writeHead(404);res.end();}}).listen(0,()=>console.log('MCP HTTP Proxy started'))"],
-      "env": {
-        "MCP_SERVER_URL": "http://localhost:3000"
-      }
+      "transport": "http",
+      "url": "http://localhost:3000/mcp",
+      "timeout": 30000
     }
   }
 }
 ```
 
-### 2. Alternative: Direct HTTP Configuration (if supported)
+### Option 2: Using Stdio Bridge (if HTTP not supported)
 
-If Cursor supports direct HTTP MCP connections:
+If Cursor only supports stdio-based MCP servers, use the provided bridge utility:
 
 ```json
 {
   "mcpServers": {
     "app-store-mcp-server": {
-      "transport": "http",
-      "url": "http://localhost:3000/mcp",
-      "headers": {
-        "Content-Type": "application/json"
+      "command": "node",
+      "args": ["tools/mcp-http-proxy.js"],
+      "env": {
+        "MCP_SERVER_URL": "http://localhost:3000/mcp"
       }
     }
   }
 }
 ```
 
-### 3. Start the MCP Server
+### Setup Steps
 
-Before using Cursor, ensure the App Store MCP Server is running:
+1. **Start the MCP Server**:
+   ```bash
+   npm start
+   # Verify: curl http://localhost:3000/health
+   ```
 
-```bash
-# Start the server
-npm start
+2. **Create the configuration file** with one of the options above
 
-# Verify it's running
-curl http://localhost:3000/health
-```
-
-### 4. Restart Cursor
-
-Restart Cursor IDE to load the new MCP configuration.
+3. **Restart Cursor IDE** to load the new MCP configuration
 
 ## Windsurf IDE Setup
 
 Windsurf follows similar MCP configuration patterns:
 
-### 1. Create MCP Configuration
+### Option 1: Direct HTTP Configuration (Recommended)
 
 **Location**: Check Windsurf documentation for the exact path, typically:
 - macOS: `~/Library/Application Support/Windsurf/mcp.json`
@@ -104,105 +110,28 @@ Windsurf follows similar MCP configuration patterns:
 **Configuration**:
 ```json
 {
-  "servers": {
-    "app-store-scraper": {
-      "type": "http",
+  "mcpServers": {
+    "app-store-mcp-server": {
+      "transport": "http",
       "url": "http://localhost:3000/mcp",
       "name": "App Store MCP Server",
-      "description": "Access to Google Play Store and Apple App Store data"
+      "description": "Access to Google Play Store and Apple App Store data",
+      "timeout": 30000
     }
   }
 }
 ```
 
-### 2. HTTP Proxy Configuration (if needed)
+### Option 2: Using Stdio Bridge (if HTTP not supported)
 
-If Windsurf requires stdio transport, create a proxy script:
+If Windsurf only supports stdio-based MCP servers:
 
-**Create `tools/mcp-http-proxy.js`**:
-```javascript
-#!/usr/bin/env node
-
-const http = require('http');
-const { spawn } = require('child_process');
-
-class MCPHttpProxy {
-  constructor(serverUrl = 'http://localhost:3000/mcp') {
-    this.serverUrl = serverUrl;
-    this.setupStdioInterface();
-  }
-
-  setupStdioInterface() {
-    process.stdin.on('data', async (data) => {
-      try {
-        const request = JSON.parse(data.toString().trim());
-        const response = await this.forwardRequest(request);
-        process.stdout.write(JSON.stringify(response) + '\n');
-      } catch (error) {
-        const errorResponse = {
-          jsonrpc: '2.0',
-          id: null,
-          error: {
-            code: -32603,
-            message: 'Internal error',
-            data: error.message
-          }
-        };
-        process.stdout.write(JSON.stringify(errorResponse) + '\n');
-      }
-    });
-  }
-
-  async forwardRequest(request) {
-    return new Promise((resolve, reject) => {
-      const postData = JSON.stringify(request);
-      const url = new URL(this.serverUrl);
-      
-      const options = {
-        hostname: url.hostname,
-        port: url.port || 3000,
-        path: url.pathname,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(postData)
-        }
-      };
-
-      const req = http.request(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => data += chunk);
-        res.on('end', () => {
-          try {
-            resolve(JSON.parse(data));
-          } catch (error) {
-            reject(new Error(`Failed to parse response: ${error.message}`));
-          }
-        });
-      });
-
-      req.on('error', reject);
-      req.write(postData);
-      req.end();
-    });
-  }
-}
-
-new MCPHttpProxy(process.env.MCP_SERVER_URL);
-```
-
-**Make it executable**:
-```bash
-chmod +x tools/mcp-http-proxy.js
-```
-
-**Windsurf Configuration**:
 ```json
 {
-  "servers": {
-    "app-store-scraper": {
+  "mcpServers": {
+    "app-store-mcp-server": {
       "command": "node",
-      "args": ["./tools/mcp-http-proxy.js"],
+      "args": ["tools/mcp-http-proxy.js"],
       "env": {
         "MCP_SERVER_URL": "http://localhost:3000/mcp"
       }
@@ -211,40 +140,68 @@ chmod +x tools/mcp-http-proxy.js
 }
 ```
 
+**Note**: The `tools/mcp-http-proxy.js` bridge utility is provided with the server for stdio compatibility.
+
 ## Generic MCP Client Setup
 
-For other MCP clients, use these general patterns:
+For other MCP clients, use these general patterns based on their transport support:
 
-### HTTP-Native Clients
+### HTTP-Native Clients (Recommended)
+
+For clients that support direct HTTP MCP connections:
 
 ```json
 {
-  "server": {
-    "name": "app-store-mcp-server",
-    "transport": "http",
-    "endpoint": "http://localhost:3000/mcp",
-    "method": "POST",
-    "headers": {
-      "Content-Type": "application/json"
+  "mcpServers": {
+    "app-store-mcp-server": {
+      "transport": "http",
+      "url": "http://localhost:3000/mcp",
+      "timeout": 30000,
+      "headers": {
+        "Content-Type": "application/json"
+      }
     }
   }
 }
 ```
 
-### Stdio-Based Clients (using proxy)
+### SSE-Compatible Clients
+
+For clients that support Server-Sent Events:
 
 ```json
 {
-  "server": {
-    "name": "app-store-mcp-server",
-    "command": "node",
-    "args": ["path/to/tools/mcp-http-proxy.js"],
-    "env": {
-      "MCP_SERVER_URL": "http://localhost:3000/mcp"
+  "mcpServers": {
+    "app-store-mcp-server": {
+      "transport": "sse",
+      "url": "http://localhost:3000/sse",
+      "timeout": 60000
     }
   }
 }
 ```
+
+### Stdio-Only Clients
+
+For clients that only support stdio-based MCP servers, use the provided bridge:
+
+```json
+{
+  "mcpServers": {
+    "app-store-mcp-server": {
+      "command": "node",
+      "args": ["tools/mcp-http-proxy.js"],
+      "env": {
+        "MCP_SERVER_URL": "http://localhost:3000/mcp"
+      }
+    }
+  }
+}
+```
+
+**Bridge Utilities Available**:
+- `tools/mcp-http-proxy.js` - HTTP to stdio bridge
+- `tools/mcp-stdio-bridge.js` - Alternative stdio bridge for Claude Desktop
 
 ## Configuration Examples
 
@@ -256,8 +213,7 @@ For other MCP clients, use these general patterns:
     "app-store-dev": {
       "transport": "http",
       "url": "http://localhost:3000/mcp",
-      "timeout": 30000,
-      "retries": 3
+      "timeout": 30000
     }
   }
 }
@@ -272,7 +228,6 @@ For other MCP clients, use these general patterns:
       "transport": "http",
       "url": "https://your-domain.com/mcp",
       "timeout": 60000,
-      "retries": 5,
       "headers": {
         "Authorization": "Bearer your-token",
         "Content-Type": "application/json"
@@ -296,6 +251,21 @@ For other MCP clients, use these general patterns:
 }
 ```
 
+### HTTPS Configuration
+
+```json
+{
+  "mcpServers": {
+    "app-store-secure": {
+      "transport": "http",
+      "url": "https://localhost:3000/mcp",
+      "timeout": 30000,
+      "allowSelfSignedCerts": true
+    }
+  }
+}
+```
+
 ## Testing the Connection
 
 ### 1. Verify Server is Running
@@ -305,7 +275,7 @@ For other MCP clients, use these general patterns:
 curl http://localhost:3000/health
 
 # Expected response:
-# {"status":"healthy","uptime":123,"tools":6,"config":{...}}
+# {"status":"healthy","uptime":123,"tools":19,"config":{...}}
 ```
 
 ### 2. Test MCP Endpoint
@@ -343,14 +313,30 @@ curl -X POST http://localhost:3000/mcp \
 
 ### 4. Verify in MCP Client
 
-Once configured, you should see the following tools available in your MCP client:
+Once configured, you should see 19 comprehensive tools available in your MCP client:
 
-- `google-play-app-details` - Get Google Play app information
-- `google-play-app-reviews` - Get Google Play app reviews  
-- `google-play-search` - Search Google Play Store
-- `app-store-app-details` - Get Apple App Store app information
-- `app-store-app-reviews` - Get Apple App Store app reviews
-- `app-store-search` - Search Apple App Store
+**Google Play Store Tools (10 tools):**
+- `google-play-app-details` - Get detailed app information
+- `google-play-app-reviews` - Get app reviews with pagination
+- `google-play-search` - Search for apps
+- `google-play-list` - Get app lists from collections and categories
+- `google-play-developer` - Get all apps by a specific developer
+- `google-play-suggest` - Get search suggestions
+- `google-play-similar` - Find similar apps
+- `google-play-permissions` - Get app permissions information
+- `google-play-datasafety` - Get app data safety information
+- `google-play-categories` - Get list of available categories
+
+**Apple App Store Tools (9 tools):**
+- `app-store-app-details` - Get detailed app information
+- `app-store-app-reviews` - Get app reviews with pagination
+- `app-store-search` - Search for apps
+- `app-store-list` - Get app lists from collections and categories
+- `app-store-developer` - Get all apps by a specific developer
+- `app-store-privacy` - Get app privacy information
+- `app-store-suggest` - Get search suggestions
+- `app-store-similar` - Find similar apps
+- `app-store-ratings` - Get detailed ratings breakdown
 
 ## Troubleshooting
 
@@ -473,7 +459,7 @@ docker inspect app-store-mcp-server | grep NetworkMode
 
 ### Load Balancing
 
-For production deployments with multiple server instances:
+For production deployments with multiple server instances (client-dependent feature):
 
 ```json
 {
@@ -512,7 +498,7 @@ If you add authentication to the server:
 
 ### Health Check Integration
 
-Configure health checks in your MCP client:
+Configure health checks in your MCP client (if supported):
 
 ```json
 {
@@ -529,6 +515,48 @@ Configure health checks in your MCP client:
   }
 }
 ```
+
+**Note**: Advanced features like load balancing and health checks depend on your MCP client's capabilities.
+
+## Bridge Utilities for Stdio Clients
+
+If your MCP client only supports stdio-based servers, the project provides bridge utilities in the `tools/` directory:
+
+### Available Bridges
+
+1. **`tools/mcp-http-proxy.js`** - General-purpose HTTP to stdio bridge
+2. **`tools/mcp-stdio-bridge.js`** - Specialized bridge for Claude Desktop
+
+### How Bridges Work
+
+```
+MCP Client (stdio) → Bridge Utility → HTTP Server (this project)
+```
+
+The bridge utilities:
+- Accept stdio input from MCP clients
+- Convert requests to HTTP and forward to the server
+- Return HTTP responses via stdout to the client
+
+### Using Bridges
+
+Simply reference the bridge in your MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "app-store-mcp-server": {
+      "command": "node",
+      "args": ["tools/mcp-http-proxy.js"],
+      "env": {
+        "MCP_SERVER_URL": "http://localhost:3000/mcp"
+      }
+    }
+  }
+}
+```
+
+**Important**: The main server must be running for bridges to work.
 
 ## Support
 

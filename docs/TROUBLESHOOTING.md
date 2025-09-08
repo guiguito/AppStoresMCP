@@ -1,6 +1,25 @@
-# SSE Connection Troubleshooting Guide
+# Troubleshooting Guide
 
-## Issue: SSE Client Timeout with "SSE error: undefined"
+## Table of Contents
+
+- [SSE Connection Issues](#sse-connection-issues)
+  - [SSE Client Timeout](#sse-client-timeout-with-sse-error-undefined)
+  - [Server-Side Improvements](#server-side-improvements-made)
+  - [Testing Results](#testing-results)
+  - [Client Compatibility](#client-compatibility)
+- [HTTPS Troubleshooting](#https-troubleshooting)
+  - [Quick Verification Steps](#quick-https-verification-steps)
+  - [Common HTTPS Issues](#common-https-issues-and-solutions)
+  - [HTTPS Configuration](#https-configuration)
+  - [HTTPS Testing](#https-testing-commands)
+- [Best Practices](#best-practices)
+- [Getting Help](#getting-help)
+
+---
+
+## SSE Connection Issues
+
+### SSE Client Timeout with "SSE error: undefined"
 
 ### Problem Description
 Some MCP clients (like Trae/2.0.2) experience timeout issues when connecting via SSE transport, showing "SSE error: undefined" even though the server logs indicate successful initialization.
@@ -238,3 +257,111 @@ If you're still experiencing issues:
 ### Conclusion
 
 The SSE transport implementation is robust and follows MCP protocol specifications correctly. Most timeout issues are due to client-side implementation problems or network configuration issues rather than server bugs.
+
+## HTTPS Troubleshooting
+
+### Quick HTTPS Verification Steps
+
+#### 1. Check if HTTPS Server is Running
+```bash
+curl -k https://localhost:3000/health
+```
+Expected: `{"status":"healthy","timestamp":"...","version":"1.0.0"}`
+
+#### 2. Test MCP Proxy with HTTPS
+```bash
+echo '{"jsonrpc":"2.0","id":"test","method":"tools/list","params":{}}' | \
+  MCP_SERVER_URL="https://localhost:3000/mcp" \
+  NODE_TLS_REJECT_UNAUTHORIZED=0 \
+  node tools/mcp-http-proxy.js
+```
+Expected: JSON response with tools list
+
+#### 3. Verify SSL Certificates
+```bash
+ls -la ssl/
+```
+Expected: `server.key` and `server.crt` files
+
+### Common HTTPS Issues and Solutions
+
+#### Issue: "certificate signed by unknown authority"
+**Solution**: Set `NODE_TLS_REJECT_UNAUTHORIZED=0` in MCP configuration
+
+#### Issue: "server gave HTTP response to HTTPS client"
+**Solutions**:
+1. Make sure server is started with HTTPS enabled:
+   ```bash
+   HTTPS_ENABLED=true HTTPS_KEY_PATH=./ssl/server.key HTTPS_CERT_PATH=./ssl/server.crt npm start
+   ```
+2. Or change client URL to use `http://` instead of `https://`
+
+#### Issue: "ECONNREFUSED" with HTTPS
+**Solution**: Make sure the MCP server is running on the correct port with HTTPS enabled
+
+### HTTPS Configuration
+
+#### MCP Client Configuration for HTTPS
+```json
+{
+  "mcpServers": {
+    "app-store-mcp-server": {
+      "command": "node",
+      "args": ["tools/mcp-http-proxy.js"],
+      "env": {
+        "MCP_SERVER_URL": "https://localhost:3000/mcp",
+        "NODE_ENV": "development",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      },
+      "disabled": false
+    }
+  }
+}
+```
+
+#### Required HTTPS Environment Variables
+```bash
+# Required for HTTPS
+HTTPS_ENABLED=true
+HTTPS_KEY_PATH=./ssl/server.key
+HTTPS_CERT_PATH=./ssl/server.crt
+
+# Optional
+PORT=3000
+NODE_ENV=development
+```
+
+### HTTPS Testing Commands
+
+#### Generate SSL Certificates
+```bash
+npm run generate-ssl
+```
+
+#### Start HTTPS Server
+```bash
+HTTPS_ENABLED=true HTTPS_KEY_PATH=./ssl/server.key HTTPS_CERT_PATH=./ssl/server.crt npm start
+```
+
+#### Test HTTPS Functionality
+```bash
+./scripts/test-https.sh
+```
+
+### HTTPS Security Notes
+
+- `NODE_TLS_REJECT_UNAUTHORIZED=0` disables certificate validation (development only)
+- Only use self-signed certificates for development
+- For production, use certificates from a trusted Certificate Authority
+- The warning about TLS connections being insecure is expected in development
+
+### HTTPS Logs and Debugging
+
+#### Check Server Logs for HTTPS
+The server logs include HTTPS-specific information:
+```json
+{"timestamp":"...","level":"info","type":"https_config_loaded","message":"HTTPS configuration loaded successfully"}
+```
+
+#### Enable Debug Logging for HTTPS
+Set `LOG_LEVEL=debug` for more detailed HTTPS logs.

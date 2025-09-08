@@ -1,5 +1,7 @@
 # App Store MCP Server
 
+> **⚠️ Experimental Status**: This MCP server is experimental and provided as-is. No ongoing fixes or maintenance are planned at this time. Feel free to fork and improve the project for your own needs.
+
 A comprehensive Node.js TypeScript MCP (Model Context Protocol) server that provides complete app store scraping functionality through multiple transport protocols. This server integrates with Google Play Store and Apple App Store scraping libraries to offer full access to all available scraping methods, returning raw data models to preserve complete information.
 
 ## Features
@@ -158,7 +160,7 @@ The server can be configured using environment variables:
 - `NODE_ENV` - Environment: development, production, test (default: development)
 
 ### Rate Limiting
-- `RATE_LIMIT_WINDOW_MS` - Rate limit window in milliseconds (default: 60000)
+- `RATE_LIMIT_WINDOW_MS` - Rate limit window in milliseconds (default: 900000 - 15 minutes)
 - `RATE_LIMIT_MAX_REQUESTS` - Max requests per window (default: 100)
 
 ### Scraping Configuration
@@ -403,56 +405,7 @@ SSE_CONNECTION_TIMEOUT=300000         # Connection timeout in ms (default: 30000
 SSE_MAX_CONNECTIONS=100               # Maximum concurrent connections (default: 100)
 ```
 
-## Migration Guide
 
-### Upgrading from v1.x to v2.x
-
-#### Breaking Changes
-
-1. **Tool Response Format**: All tools now return raw data from underlying scraping libraries instead of transformed models
-2. **New Tools**: 13 additional tools have been added (was 6, now 19 tools)
-3. **Transport Support**: SSE transport has been added alongside existing HTTP transport
-
-#### Migration Steps
-
-1. **Update Tool Responses**: If your client code expects specific response formats, update to handle raw scraper responses
-2. **Review New Tools**: Consider using new specialized tools instead of generic ones
-3. **Transport Configuration**: Add SSE transport configuration if needed for legacy clients
-
-#### Example Response Changes
-
-**Before (v1.x)**:
-```json
-{
-  "success": true,
-  "data": {
-    "id": "com.whatsapp",
-    "title": "WhatsApp Messenger",
-    "rating": 4.2
-  },
-  "metadata": {
-    "source": "google-play-store",
-    "timestamp": "2024-01-15T10:30:00.000Z"
-  }
-}
-```
-
-**After (v2.x)**:
-```json
-{
-  "appId": "com.whatsapp",
-  "title": "WhatsApp Messenger", 
-  "summary": "Simple. Reliable. Secure.",
-  "installs": "5,000,000,000+",
-  "minInstalls": 5000000000,
-  "score": 4.2,
-  "scoreText": "4.2",
-  "ratings": 15000000,
-  "reviews": 2500000,
-  "histogram": { "1": 500000, "2": 300000, "3": 700000, "4": 2000000, "5": 12000000 },
-  // ... complete raw response from google-play-scraper
-}
-```
 
 ## MCP Client Setup
 
@@ -482,6 +435,20 @@ For detailed Docker deployment instructions, see [DOCKER.md](./docs/DOCKER.md).
 ## License
 
 MIT License - see [LICENSE](./LICENSE) for details.
+
+## Additional Resources
+
+### App Store Optimization (ASO) Guides
+
+The `docs/aso/` directory contains comprehensive guides for manual App Store Optimization:
+
+- **`appstore_keywords.md`** - Advanced iOS App Store keyword optimization guide
+- **`playstore_keywords.md`** - Step-by-step Google Play Store keyword optimization
+- **`appstore_page.md`** - iOS App Store page optimization strategies  
+- **`playstore_page.md`** - Google Play Store listing optimization
+- **`guide_traffic_difficulty.md`** - Traffic analysis and keyword difficulty assessment
+
+These guides complement the MCP server by providing strategies for optimizing app store listings using the data you can gather through the server's tools.
 
 ## Support
 

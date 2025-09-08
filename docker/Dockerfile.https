@@ -1,8 +1,8 @@
 # HTTPS-enabled Docker image for MCP Server
 FROM node:18-alpine
 
-# Install OpenSSL for certificate generation
-RUN apk add --no-cache openssl
+# Install OpenSSL for certificate generation and wget for health checks
+RUN apk add --no-cache openssl wget
 
 # Create app directory
 WORKDIR /usr/src/app
