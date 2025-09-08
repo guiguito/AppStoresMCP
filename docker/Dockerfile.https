@@ -1,0 +1,62 @@
+# HTTPS-enabled Docker image for MCP Server
+FROM node:18-alpine
+
+# Install OpenSSL for certificate generation
+RUN apk add --no-cache openssl
+
+# Create app directory
+WORKDIR /usr/src/app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Create SSL directory
+RUN mkdir -p /usr/src/app/ssl
+
+# Copy SSL certificate generation script
+COPY scripts/generate-ssl-certs.sh /usr/src/app/scripts/
+RUN chmod +x /usr/src/app/scripts/generate-ssl-certs.sh
+
+# Create a startup script that can generate certificates if needed
+RUN cat > /usr/src/app/start-https.sh << 'EOF'
+#!/bin/sh
+
+# Check if SSL certificates exist
+if [ ! -f "/usr/src/app/ssl/server.key" ] || [ ! -f "/usr/src/app/ssl/server.crt" ]; then
+    echo "🔐 SSL certificates not found. Generating self-signed certificates..."
+    /usr/src/app/scripts/generate-ssl-certs.sh
+fi
+
+# Set HTTPS environment variables if not already set
+export HTTPS_ENABLED=${HTTPS_ENABLED:-true}
+export HTTPS_KEY_PATH=${HTTPS_KEY_PATH:-/usr/src/app/ssl/server.key}
+export HTTPS_CERT_PATH=${HTTPS_CERT_PATH:-/usr/src/app/ssl/server.crt}
+
+echo "🚀 Starting MCP Server with HTTPS enabled..."
+echo "   Key: $HTTPS_KEY_PATH"
+echo "   Cert: $HTTPS_CERT_PATH"
+
+# Start the application
+exec npm start
+EOF
+
+RUN chmod +x /usr/src/app/start-https.sh
+
+# Expose HTTPS port
+EXPOSE 3000
+
+# Health check for HTTPS
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget --no-check-certificate --quiet --tries=1 --spider https://localhost:3000/health || exit 1
+
+# Use the HTTPS startup script
+CMD ["/usr/src/app/start-https.sh"]

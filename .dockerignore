@@ -1,0 +1,63 @@
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output (will be created during build)
+dist/
+build/
+
+# Test files and coverage
+tests/
+coverage/
+*.test.ts
+*.test.js
+jest.config.js
+
+# Development files
+.git/
+.gitignore
+README.md
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment files
+.env*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+docs/
+*.md
+!package*.json
+
+# Linting
+eslint.config.js
+.eslintrc*

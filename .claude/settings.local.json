@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "WebFetch(domain:support.anthropic.com)",
+      "WebSearch",
+      "Bash(npm install:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "additionalDirectories": [
+      "/Users/guiguito/Library"
+    ]
+  }
+}

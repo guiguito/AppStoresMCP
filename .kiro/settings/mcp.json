@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "app-store-mcp-server": {
+      "command": "node",
+      "args": [
+        "mcp-http-proxy.js"
+      ],
+      "env": {
+        "MCP_SERVER_URL": "http://localhost:3000/mcp",
+        "NODE_ENV": "development",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "google-play-search",
+        "app-store-search",
+        "google-play-app-details",
+        "app-store-app-details",
+        "google-play-app-reviews"
+      ]
+    }
+  }
+}

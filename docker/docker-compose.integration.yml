@@ -1,0 +1,116 @@
+# Docker Compose configuration for integration testing environment
+# Provides isolated environment for running integration tests with real API calls
+
+version: '3.8'
+
+services:
+  # Main MCP server for comprehensive integration testing
+  mcp-server-test:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: development
+    container_name: mcp-server-integration-test
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=test
+      - PORT=3000
+      - LOG_LEVEL=error
+      # Enhanced rate limiting for comprehensive tests
+      - RATE_LIMIT_WINDOW_MS=60000
+      - RATE_LIMIT_MAX_REQUESTS=50
+      # Longer timeouts for real API calls
+      - SCRAPING_TIMEOUT=20000
+      - SCRAPING_RETRIES=1
+      - REQUEST_TIMEOUT=35000
+      - CORS_ORIGINS=*
+      - ENABLE_LOGGING=false
+      # SSE transport configuration
+      - ENABLE_HTTP_TRANSPORT=true
+      - ENABLE_SSE_TRANSPORT=true
+      - SSE_HEARTBEAT_INTERVAL=5000
+      - SSE_CONNECTION_TIMEOUT=30000
+      - SSE_MAX_CONNECTIONS=10
+    volumes:
+      - ../src:/app/src:ro
+      - ../tests:/app/tests:ro
+      - ../package.json:/app/package.json:ro
+      - ../tsconfig.json:/app/tsconfig.json:ro
+      - ../jest.config.js:/app/jest.config.js:ro
+    networks:
+      - integration-test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+    restart: unless-stopped
+
+  # Test runner container for executing comprehensive integration tests
+  integration-test-runner:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: development
+    container_name: integration-test-runner
+    environment:
+      - NODE_ENV=test
+      - MCP_SERVER_URL=http://mcp-server-test:3000
+      - INTEGRATION_TEST_MODE=true
+      # Enhanced rate limiting for comprehensive tests
+      - RATE_LIMIT_DELAY=2500
+      - COMPREHENSIVE_TEST_MODE=true
+      # Test timeouts
+      - JEST_TIMEOUT=45000
+      - SSE_TEST_TIMEOUT=15000
+    volumes:
+      - ../src:/app/src:ro
+      - ../tests:/app/tests:ro
+      - ../package.json:/app/package.json:ro
+      - ../tsconfig.json:/app/tsconfig.json:ro
+      - ../jest.config.js:/app/jest.config.js:ro
+      - integration-test-results:/app/test-results
+      - integration-test-logs:/app/logs
+    networks:
+      - integration-test-network
+    depends_on:
+      mcp-server-test:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for MCP server to be ready...' &&
+        sleep 15 &&
+        echo 'Running comprehensive integration tests for all 19 tools...' &&
+        npm run test:integration:comprehensive &&
+        echo 'Comprehensive integration tests completed.'
+      "
+    profiles:
+      - test
+
+  # Monitoring container for test metrics (optional)
+  test-monitor:
+    image: prom/prometheus:latest
+    container_name: integration-test-monitor
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus-test.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - integration-test-network
+    profiles:
+      - monitoring
+
+networks:
+  integration-test-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  integration-test-results:
+    driver: local
+  integration-test-logs:
+    driver: local
