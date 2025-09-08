@@ -70,7 +70,7 @@ export class GooglePlayDeveloperTool implements MCPTool {
       this.validateParams(params);
 
       // Fetch raw developer data directly from google-play-scraper
-      const gplayModule = await import('google-play-scraper');
+      const gplayModule = await new Function('return import("google-play-scraper")')();
       const gplay = gplayModule.default;
       
       const developerOptions: any = {

@@ -62,7 +62,7 @@ export class GooglePlaySimilarTool implements MCPTool {
       this.validateParams(params);
 
       // Fetch raw similar data directly from google-play-scraper
-      const gplayModule = await import('google-play-scraper');
+      const gplayModule = await new Function('return import("google-play-scraper")')();
       const gplay = gplayModule.default;
       
       const similarOptions = {

@@ -80,7 +80,7 @@ export class GooglePlayAppReviewsTool implements MCPTool {
       this.validateParams(params);
 
       // Fetch raw app reviews directly from google-play-scraper
-      const gplayModule = await import('google-play-scraper');
+      const gplayModule = await new Function('return import("google-play-scraper")')();
       const gplay = gplayModule.default;
       
       const reviewsOptions: any = {
@@ -148,7 +148,7 @@ export class GooglePlayAppReviewsTool implements MCPTool {
    * @private
    */
   private async mapSortOption(sort?: string): Promise<number> {
-    const gplayModule = await import('google-play-scraper');
+    const gplayModule = await new Function('return import("google-play-scraper")')();
     const gplay = gplayModule.default;
     switch (sort) {
       case 'newest':

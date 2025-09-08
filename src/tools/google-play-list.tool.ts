@@ -95,7 +95,7 @@ export class GooglePlayListTool implements MCPTool {
       this.validateParams(params);
 
       // Fetch raw list data directly from google-play-scraper
-      const gplayModule = await import('google-play-scraper');
+      const gplayModule = await new Function('return import("google-play-scraper")')();
       const gplay = gplayModule.default;
       
       const listOptions: any = {
@@ -172,7 +172,7 @@ export class GooglePlayListTool implements MCPTool {
    * @private
    */
   private async mapCollection(collection: string): Promise<any> {
-    const gplayModule = await import('google-play-scraper');
+    const gplayModule = await new Function('return import("google-play-scraper")')();
     const gplay = gplayModule.default;
     
     switch (collection) {
@@ -192,7 +192,7 @@ export class GooglePlayListTool implements MCPTool {
    * @private
    */
   private async mapCategory(category: string): Promise<any> {
-    const gplayModule = await import('google-play-scraper');
+    const gplayModule = await new Function('return import("google-play-scraper")')();
     const gplay = gplayModule.default;
     
     // The category constants in google-play-scraper are the same as the string values
@@ -205,7 +205,7 @@ export class GooglePlayListTool implements MCPTool {
    * @private
    */
   private async mapAge(age: string): Promise<any> {
-    const gplayModule = await import('google-play-scraper');
+    const gplayModule = await new Function('return import("google-play-scraper")')();
     const gplay = gplayModule.default;
     
     switch (age) {

@@ -25,7 +25,7 @@ export class GooglePlayCategoriesTool implements MCPTool {
   async execute(): Promise<any> {
     try {
       // Fetch raw categories data directly from google-play-scraper
-      const gplayModule = await import('google-play-scraper');
+      const gplayModule = await new Function('return import("google-play-scraper")')();
       const gplay = gplayModule.default;
       
       const rawCategoriesData = await gplay.categories();
