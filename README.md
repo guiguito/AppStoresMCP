@@ -213,7 +213,7 @@ The MCP server supports HTTPS for secure connections. You can enable HTTPS in tw
 For development and testing, you can generate self-signed certificates:
 
 ```bash
-# Generate SSL certificates
+# Generate SSL certificates (creates ssl/ directory, not tracked in git)
 ./scripts/generate-ssl-certs.sh
 
 # Enable HTTPS with generated certificates
@@ -456,19 +456,19 @@ SSE_MAX_CONNECTIONS=100               # Maximum concurrent connections (default:
 
 ## MCP Client Setup
 
-To connect MCP clients like Cursor or Windsurf to this server, see [MCP_CLIENT_SETUP.md](./MCP_CLIENT_SETUP.md).
+To connect MCP clients like Cursor or Windsurf to this server, see [MCP_CLIENT_SETUP.md](./docs/MCP_CLIENT_SETUP.md).
 
 ## API Documentation
 
-For detailed API documentation including request/response examples, see [API.md](./API.md).
+For detailed API documentation including request/response examples, see [API.md](./docs/API.md).
 
 ## Troubleshooting
 
-For common issues and solutions, see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md).
+For common issues and solutions, see [TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md).
 
 ## Docker Documentation
 
-For detailed Docker deployment instructions, see [DOCKER.md](./DOCKER.md).
+For detailed Docker deployment instructions, see [DOCKER.md](./docs/DOCKER.md).
 
 ## Contributing
 

@@ -168,7 +168,7 @@ SSE_INITIALIZATION_TIMEOUT=5000
 
 #### Test SSE Connection
 ```bash
-node debug-sse-client.js
+node debug/debug-sse-client.js
 ```
 
 #### Test Complete Handshake

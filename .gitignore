@@ -21,6 +21,8 @@ coverage/
 # IDE files
 .vscode/
 .idea/
+.kiro/
+.claude/
 *.swp
 *.swo
 
@@ -43,3 +45,6 @@ pids/
 
 # Optional eslint cache
 .eslintcache
+
+# SSL certificates (generated)
+ssl/

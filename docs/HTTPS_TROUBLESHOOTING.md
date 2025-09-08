@@ -13,7 +13,7 @@ Expected: `{"status":"healthy","timestamp":"...","version":"1.0.0"}`
 echo '{"jsonrpc":"2.0","id":"test","method":"tools/list","params":{}}' | \
   MCP_SERVER_URL="https://localhost:3000/mcp" \
   NODE_TLS_REJECT_UNAUTHORIZED=0 \
-  node mcp-http-proxy.js
+  node tools/mcp-http-proxy.js
 ```
 Expected: JSON response with tools list
 
@@ -48,12 +48,14 @@ Expected: `server.key` and `server.crt` files
 ## Configuration Files
 
 ### MCP Client Configuration (`.kiro/settings/mcp.json`)
+
+**Note**: The `.kiro` directory is gitignored. Create this file locally for your MCP client configuration.
 ```json
 {
   "mcpServers": {
     "app-store-mcp-server": {
       "command": "node",
-      "args": ["mcp-http-proxy.js"],
+      "args": ["tools/mcp-http-proxy.js"],
       "env": {
         "MCP_SERVER_URL": "https://localhost:3000/mcp",
         "NODE_ENV": "development",

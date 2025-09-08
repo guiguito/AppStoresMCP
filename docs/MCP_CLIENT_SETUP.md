@@ -119,7 +119,7 @@ Windsurf follows similar MCP configuration patterns:
 
 If Windsurf requires stdio transport, create a proxy script:
 
-**Create `mcp-http-proxy.js`**:
+**Create `tools/mcp-http-proxy.js`**:
 ```javascript
 #!/usr/bin/env node
 
@@ -193,7 +193,7 @@ new MCPHttpProxy(process.env.MCP_SERVER_URL);
 
 **Make it executable**:
 ```bash
-chmod +x mcp-http-proxy.js
+chmod +x tools/mcp-http-proxy.js
 ```
 
 **Windsurf Configuration**:
@@ -202,7 +202,7 @@ chmod +x mcp-http-proxy.js
   "servers": {
     "app-store-scraper": {
       "command": "node",
-      "args": ["./mcp-http-proxy.js"],
+      "args": ["./tools/mcp-http-proxy.js"],
       "env": {
         "MCP_SERVER_URL": "http://localhost:3000/mcp"
       }
@@ -238,7 +238,7 @@ For other MCP clients, use these general patterns:
   "server": {
     "name": "app-store-mcp-server",
     "command": "node",
-    "args": ["path/to/mcp-http-proxy.js"],
+    "args": ["path/to/tools/mcp-http-proxy.js"],
     "env": {
       "MCP_SERVER_URL": "http://localhost:3000/mcp"
     }

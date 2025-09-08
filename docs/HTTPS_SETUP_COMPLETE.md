@@ -22,12 +22,14 @@ PORT=3000
 ```
 
 #### MCP Client Configuration (`.kiro/settings/mcp.json`)
+
+**Note**: The `.kiro` directory is gitignored. Create this file locally for your MCP client configuration.
 ```json
 {
   "mcpServers": {
     "app-store-mcp-server": {
       "command": "node",
-      "args": ["mcp-http-proxy.js"],
+      "args": ["tools/mcp-http-proxy.js"],
       "env": {
         "MCP_SERVER_URL": "https://localhost:3000/mcp",
         "NODE_ENV": "development",
@@ -76,7 +78,7 @@ If you still see connection issues:
    echo '{"jsonrpc":"2.0","id":"test","method":"tools/list","params":{}}' | \
      MCP_SERVER_URL="https://localhost:3000/mcp" \
      NODE_TLS_REJECT_UNAUTHORIZED=0 \
-     node mcp-http-proxy.js
+     node tools/mcp-http-proxy.js
    ```
 
 3. **Check MCP Logs** in Kiro IDE for detailed error information
@@ -91,9 +93,9 @@ If you still see connection issues:
 
 - `src/config/server-config.ts` - Added HTTPS configuration
 - `src/transport/http-transport.ts` - Added HTTPS server support
-- `mcp-http-proxy.js` - Fixed stdin handling and added SSL support
-- `.kiro/settings/mcp.json` - Updated to use HTTPS URL
-- `ssl/server.key` & `ssl/server.crt` - Generated SSL certificates
+- `tools/mcp-http-proxy.js` - Fixed stdin handling and added SSL support
+- `.kiro/settings/mcp.json` - Updated to use HTTPS URL (create locally, not in git)
+- `ssl/server.key` & `ssl/server.crt` - Generated SSL certificates (not in git)
 - Various scripts and documentation files
 
 ## 🚀 Your HTTPS MCP Server is Ready!
