@@ -75,7 +75,34 @@ npx tsc examples/advanced-mcp-client.ts --target ES2020 --module commonjs --esMo
 node examples/advanced-mcp-client.js
 ```
 
-### 3. SSE Transport Client (`sse-client-example.js`)
+### 4. Review Filtering Example (`review-filtering-example.js`)
+
+A comprehensive example demonstrating the new review filtering functionality that reduces token consumption by up to 93%.
+
+**Features:**
+- Comparison between filtered and full review responses
+- Token usage calculation and reduction demonstration
+- Essential fields preservation examples
+- Both Google Play and App Store review filtering
+- Performance impact analysis
+
+**Usage:**
+```bash
+# Make sure the MCP server is running
+npm start
+
+# In another terminal, run the review filtering example
+node examples/review-filtering-example.js
+```
+
+**Key Demonstrations:**
+- Default filtering behavior (fullDetail=false)
+- Full detail mode (fullDetail=true)
+- Token usage comparison and savings calculation
+- Essential vs. removed fields analysis
+- Cross-platform filtering differences
+
+### 5. SSE Transport Client (`sse-client-example.js`)
 
 A comprehensive SSE (Server-Sent Events) client demonstrating the fixed SSE transport with automatic MCP initialization.
 

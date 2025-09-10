@@ -5,6 +5,7 @@
 
 import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
+import { filterReviewData } from '../utils/response-filter';
 
 /**
  * Input parameters for Google Play app reviews tool
@@ -16,6 +17,7 @@ interface GooglePlayAppReviewsParams {
   sort?: 'newest' | 'rating' | 'helpfulness';
   lang?: string;
   country?: string;
+  fullDetail?: boolean;
 }
 
 /**
@@ -61,6 +63,11 @@ export class GooglePlayAppReviewsTool implements MCPTool {
         description: 'Country code for region-specific content (default: us)',
         pattern: '^[a-z]{2}$',
         default: 'us'
+      },
+      fullDetail: {
+        type: 'boolean',
+        description: 'Whether to return full review details (default: false). When false, only essential fields are returned: id, userName, date, score, text, version',
+        default: false
       }
     },
     required: ['appId'],
@@ -99,8 +106,8 @@ export class GooglePlayAppReviewsTool implements MCPTool {
 
       const rawReviews = await gplay.reviews(reviewsOptions);
 
-      // Return complete raw response from google-play-scraper
-      return rawReviews;
+      // Filter response to reduce token consumption when not in full detail mode
+      return filterReviewData(rawReviews, params.fullDetail || false, 'google-play');
     } catch (error) {
       const appId = params && typeof params === 'object' ? params.appId : 'unknown';
       return this.handleError(error, appId);
@@ -142,6 +149,10 @@ export class GooglePlayAppReviewsTool implements MCPTool {
 
     if (params.country && (typeof params.country !== 'string' || !/^[a-z]{2}$/.test(params.country))) {
       throw new Error('country must be a valid 2-letter country code');
+    }
+
+    if (params.fullDetail !== undefined && typeof params.fullDetail !== 'boolean') {
+      throw new Error('fullDetail must be a boolean');
     }
   }
 
@@ -190,7 +201,8 @@ export class GooglePlayAppReviewsTool implements MCPTool {
       error.message.includes('nextPaginationToken must be') ||
       error.message.includes('sort must be') ||
       error.message.includes('lang must be') ||
-      error.message.includes('country must be')
+      error.message.includes('country must be') ||
+      error.message.includes('fullDetail must be')
     )) {
       return {
         success: false,

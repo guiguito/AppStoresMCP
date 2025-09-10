@@ -17,10 +17,12 @@ The MCP server now includes automatic response filtering for list and search too
 ### Google Play Store Tools
 - `google-play-search` - Always filters responses (no fullDetail parameter)
 - `google-play-list` - Filters when `fullDetail=false` (default)
+- `google-play-app-reviews` - Filters when `fullDetail=false` (default)
 
 ### Apple App Store Tools  
 - `app-store-search` - Always filters responses (no fullDetail parameter)
 - `app-store-list` - Filters when `fullDetail=false` (default)
+- `app-store-app-reviews` - Filters when `fullDetail=false` (default)
 
 ## Filtered Fields
 
@@ -58,7 +60,8 @@ The following fields are removed from non-detailed responses to reduce token con
 
 ## Essential Fields (Always Kept)
 
-The following essential fields are always preserved:
+### App Data
+The following essential fields are always preserved for app data:
 
 - `id` / `appId` - Unique app identifier
 - `title` - App name
@@ -66,6 +69,26 @@ The following essential fields are always preserved:
 - `price` - App price
 - `rating` - Average rating
 - `ratingsCount` - Number of ratings
+
+### Review Data
+When `fullDetail=false` for review tools, only these essential fields are kept:
+
+**App Store Reviews:**
+- `id` - Review identifier
+- `version` - App version reviewed
+- `userName` - Reviewer username
+- `score` - Rating score (1-5)
+- `title` - Review title
+- `text` - Review text content
+- `updated` - Review update date
+
+**Google Play Reviews:**
+- `id` - Review identifier
+- `userName` - Reviewer username
+- `date` - Review date
+- `score` - Rating score (1-5)
+- `text` - Review text content
+- `version` - App version reviewed
 - `category` - App category
 - `developer` - Developer name
 - `developerId` - Developer identifier

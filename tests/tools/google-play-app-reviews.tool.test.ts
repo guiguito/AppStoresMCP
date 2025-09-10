@@ -16,6 +16,14 @@ const mockGooglePlayScraper = {
 
 jest.mock('google-play-scraper', () => mockGooglePlayScraper);
 
+// Mock the dynamic import used in the tool
+global.Function = jest.fn().mockImplementation((code) => {
+  if (code === 'return import("google-play-scraper")') {
+    return () => Promise.resolve({ default: mockGooglePlayScraper });
+  }
+  return Function.prototype.constructor.call(this, code);
+});
+
 import { GooglePlayAppReviewsTool } from '../../src/tools/google-play-app-reviews.tool';
 
 describe('GooglePlayAppReviewsTool', () => {
@@ -98,13 +106,26 @@ describe('GooglePlayAppReviewsTool', () => {
 
       const result = await tool.execute({ appId: 'com.example.testapp' });
 
-      expect(result).toEqual(mockRawReviews);
+      // Should return filtered data by default (fullDetail: false)
+      expect(result.data).toHaveLength(2);
+      expect(result.nextPaginationToken).toBe('next_page_token');
+      expect(result.data[0].id).toBe('review1');
+      expect(result.data[0].userName).toBe('User1');
+      expect(result.data[0].score).toBe(5);
+      expect(result.data[0].text).toBe('This app is amazing and works perfectly.');
+      expect(result.data[0].date).toBe('2023-01-01');
+      expect(result.data[0].version).toBe('1.0.0');
+      // Should not have filtered fields
+      expect(result.data[0].title).toBeUndefined();
+      expect(result.data[0].thumbsUp).toBeUndefined();
+      
       expect(mockGooglePlayScraper.reviews).toHaveBeenCalledWith({
         appId: 'com.example.testapp',
         num: 100,
         sort: mockGooglePlayScraper.sort.NEWEST,
         lang: 'en',
-        country: 'us'
+        country: 'us',
+        paginate: true
       });
     });
 
@@ -118,14 +139,18 @@ describe('GooglePlayAppReviewsTool', () => {
         sort: 'rating'
       });
 
-      expect(result).toEqual(mockRawReviews);
+      // Should return filtered data by default
+      expect(result.data).toHaveLength(2);
+      expect(result.data[0].title).toBeUndefined(); // Should be filtered out
+      
       expect(mockGooglePlayScraper.reviews).toHaveBeenCalledWith({
         appId: 'com.example.testapp',
         num: 50,
         sort: mockGooglePlayScraper.sort.RATING,
         nextPaginationToken: 'CsEBIrgBAcgILLS5IDBgvTCYG4Xnpm31aqIVGkbk0JJ',
         lang: 'en',
-        country: 'us'
+        country: 'us',
+        paginate: true
       });
     });
 
@@ -250,13 +275,17 @@ describe('GooglePlayAppReviewsTool', () => {
         country: 'ca'
       });
 
-      expect(result).toEqual(mockRawReviews);
+      // Should return filtered data by default
+      expect(result.data).toHaveLength(2);
+      expect(result.data[0].title).toBeUndefined(); // Should be filtered out
+      
       expect(mockGooglePlayScraper.reviews).toHaveBeenCalledWith({
         appId: 'com.example.testapp',
         num: 100,
         sort: mockGooglePlayScraper.sort.NEWEST,
         lang: 'fr',
-        country: 'ca'
+        country: 'ca',
+        paginate: true
       });
     });
   });
@@ -272,7 +301,8 @@ describe('GooglePlayAppReviewsTool', () => {
         num: 100,
         sort: mockGooglePlayScraper.sort.NEWEST,
         lang: 'en',
-        country: 'us'
+        country: 'us',
+        paginate: true
       });
     });
 
@@ -292,8 +322,69 @@ describe('GooglePlayAppReviewsTool', () => {
         sort: mockGooglePlayScraper.sort.HELPFULNESS,
         nextPaginationToken: 'CsEBIrgBAcgILLS5IDBgvTCYG4Xnpm31aqIVGkbk0JJ',
         lang: 'en',
-        country: 'us'
+        country: 'us',
+        paginate: true
       });
+    });
+
+    it('should return full details when fullDetail is true', async () => {
+      mockGooglePlayScraper.reviews.mockResolvedValue(mockRawReviews);
+
+      const result = await tool.execute({ appId: 'com.example.testapp', fullDetail: true });
+
+      expect(result).toEqual(mockRawReviews);
+      expect(mockGooglePlayScraper.reviews).toHaveBeenCalledWith({
+        appId: 'com.example.testapp',
+        num: 100,
+        sort: mockGooglePlayScraper.sort.NEWEST,
+        lang: 'en',
+        country: 'us',
+        paginate: true
+      });
+    });
+
+    it('should return filtered details when fullDetail is false', async () => {
+      const mockRawReviewsWithExtraFields = {
+        data: [
+          {
+            id: 'review1',
+            userName: 'User1',
+            score: 5,
+            text: 'This app is amazing and works perfectly.',
+            date: '2023-01-01',
+            version: '1.0.0',
+            // Extra fields that should be filtered out
+            title: 'Great app!',
+            thumbsUp: 10,
+            url: 'https://example.com/review'
+          }
+        ],
+        nextPaginationToken: 'next_page_token'
+      };
+      mockGooglePlayScraper.reviews.mockResolvedValue(mockRawReviewsWithExtraFields);
+
+      const result = await tool.execute({ appId: 'com.example.testapp', fullDetail: false });
+
+      expect(result.data).toHaveLength(1);
+      expect(result.nextPaginationToken).toBe('next_page_token');
+      expect(result.data[0].id).toBe('review1');
+      expect(result.data[0].userName).toBe('User1');
+      expect(result.data[0].score).toBe(5);
+      expect(result.data[0].text).toBe('This app is amazing and works perfectly.');
+      expect(result.data[0].date).toBe('2023-01-01');
+      expect(result.data[0].version).toBe('1.0.0');
+      // Should not have extra fields
+      expect(result.data[0].title).toBeUndefined();
+      expect(result.data[0].thumbsUp).toBeUndefined();
+      expect(result.data[0].url).toBeUndefined();
+    });
+
+    it('should reject invalid fullDetail parameter', async () => {
+      const result = await tool.execute({ appId: 'com.example.testapp', fullDetail: 'true' as any });
+
+      expect(result.success).toBe(false);
+      expect(result.error.type).toBe('validation_error');
+      expect(result.error.message).toContain('fullDetail must be a boolean');
     });
 
     it('should handle google-play-scraper errors', async () => {
@@ -334,20 +425,22 @@ describe('GooglePlayAppReviewsTool', () => {
   });
 
   describe('Response Format', () => {
-    it('should return raw google-play-scraper response', async () => {
+    it('should return raw google-play-scraper response when fullDetail is true', async () => {
       mockGooglePlayScraper.reviews.mockResolvedValue(mockRawReviews);
 
-      const result = await tool.execute({ appId: 'com.example.testapp' });
+      const result = await tool.execute({ appId: 'com.example.testapp', fullDetail: true });
 
       // Should return the complete raw response from google-play-scraper
       expect(result).toEqual(mockRawReviews);
       expect(result.data).toHaveLength(2);
       expect(result.data[0].id).toBe('review1');
       expect(result.data[0].score).toBe(5);
+      expect(result.data[0].title).toBe('Great app!'); // Should have all fields when fullDetail is true
+      expect(result.data[0].thumbsUp).toBe(10);
       expect(result.nextPaginationToken).toBe('next_page_token');
     });
 
-    it('should preserve all fields from raw response', async () => {
+    it('should preserve all fields from raw response when fullDetail is true', async () => {
       const extendedRawResponse = {
         ...mockRawReviews,
         additionalField: 'additional value',
@@ -356,7 +449,7 @@ describe('GooglePlayAppReviewsTool', () => {
       
       mockGooglePlayScraper.reviews.mockResolvedValue(extendedRawResponse);
 
-      const result = await tool.execute({ appId: 'com.example.testapp' });
+      const result = await tool.execute({ appId: 'com.example.testapp', fullDetail: true });
 
       // Should preserve all fields including additional ones
       expect(result).toEqual(extendedRawResponse);
@@ -402,7 +495,9 @@ describe('GooglePlayAppReviewsTool', () => {
           appId: 'com.example.testapp',
           sort: sort as any
         });
-        expect(result).toEqual(mockRawReviews);
+        // Should return filtered data by default
+        expect(result.data).toHaveLength(2);
+        expect(result.data[0].title).toBeUndefined(); // Should be filtered out
       }
     });
 
@@ -414,14 +509,18 @@ describe('GooglePlayAppReviewsTool', () => {
         appId: 'com.example.testapp',
         num: 1
       });
-      expect(result1).toEqual(mockRawReviews);
+      // Should return filtered data by default
+      expect(result1.data).toHaveLength(2);
+      expect(result1.data[0].title).toBeUndefined(); // Should be filtered out
 
       // Test maximum value
       const result2 = await tool.execute({
         appId: 'com.example.testapp',
         num: 150
       });
-      expect(result2).toEqual(mockRawReviews);
+      // Should return filtered data by default
+      expect(result2.data).toHaveLength(2);
+      expect(result2.data[0].title).toBeUndefined(); // Should be filtered out
     });
 
     it('should handle nextPaginationToken parameter', async () => {
@@ -432,14 +531,18 @@ describe('GooglePlayAppReviewsTool', () => {
         nextPaginationToken: 'CsEBIrgBAcgILLS5IDBgvTCYG4Xnpm31aqIVGkbk0JJ'
       });
 
-      expect(result).toEqual(mockRawReviews);
+      // Should return filtered data by default
+      expect(result.data).toHaveLength(2);
+      expect(result.data[0].title).toBeUndefined(); // Should be filtered out
+      
       expect(mockGooglePlayScraper.reviews).toHaveBeenCalledWith({
         appId: 'com.example.testapp',
         num: 100,
         sort: mockGooglePlayScraper.sort.NEWEST,
         nextPaginationToken: 'CsEBIrgBAcgILLS5IDBgvTCYG4Xnpm31aqIVGkbk0JJ',
         lang: 'en',
-        country: 'us'
+        country: 'us',
+        paginate: true
       });
     });
 

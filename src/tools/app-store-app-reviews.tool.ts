@@ -5,6 +5,7 @@
 
 import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
+import { filterReviewData } from '../utils/response-filter';
 
 /**
  * Input parameters for Apple App Store app reviews tool
@@ -14,6 +15,7 @@ interface AppStoreAppReviewsParams {
   page?: number;
   sort?: 'newest' | 'rating' | 'helpfulness';
   country?: string;
+  fullDetail?: boolean;
 }
 
 /**
@@ -48,6 +50,11 @@ export class AppStoreAppReviewsTool implements MCPTool {
         description: 'Country code for region-specific content (default: us)',
         pattern: '^[a-z]{2}$',
         default: 'us'
+      },
+      fullDetail: {
+        type: 'boolean',
+        description: 'Whether to return full review details (default: false). When false, only essential fields are returned: id, version, userName, score, title, text, updated',
+        default: false
       }
     },
     required: ['appId'],
@@ -77,8 +84,8 @@ export class AppStoreAppReviewsTool implements MCPTool {
 
     const rawReviews = await store.reviews(reviewsOptions);
 
-    // Return complete raw response from app-store-scraper
-    return rawReviews;
+    // Filter response to reduce token consumption when not in full detail mode
+    return filterReviewData(rawReviews, params.fullDetail || false, 'app-store');
   }
 
   /**
@@ -110,6 +117,10 @@ export class AppStoreAppReviewsTool implements MCPTool {
 
     if (params.country && (typeof params.country !== 'string' || !/^[a-z]{2}$/.test(params.country))) {
       throw new Error('country must be a valid 2-letter country code');
+    }
+
+    if (params.fullDetail !== undefined && typeof params.fullDetail !== 'boolean') {
+      throw new Error('fullDetail must be a boolean');
     }
   }
 

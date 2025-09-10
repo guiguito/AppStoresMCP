@@ -169,6 +169,7 @@ Get reviews for a Google Play Store app with pagination support.
 | `num` | integer | No | Number of reviews to fetch (default: 100, max: 150) |
 | `nextPaginationToken` | string | No | Pagination token from previous response for getting next batch of reviews |
 | `sort` | string | No | Sort order: "newest", "rating", "helpfulness" (default: "newest") |
+| `fullDetail` | boolean | No | Return full review details (default: false). When false, only essential fields are returned: id, userName, date, score, text, version |
 | `lang` | string | No | Language code (default: "en") |
 | `country` | string | No | Country code (default: "us") |
 
@@ -541,6 +542,7 @@ Get reviews for an Apple App Store app with pagination support.
 | `sort` | string | No | Sort order: "newest", "rating", "helpfulness" (default: "newest") |
 | `country` | string | No | Country code (default: "us") |
 | `num` | integer | No | Number of reviews (1-100, default: 50) |
+| `fullDetail` | boolean | No | Return full review details (default: false). When false, only essential fields are returned: id, version, userName, score, title, text, updated |
 
 #### Example Request
 
