@@ -5,6 +5,7 @@
 
 import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
+import { filterAppData } from '../utils/response-filter';
 
 /**
  * Input parameters for Google Play list tool
@@ -122,8 +123,8 @@ export class GooglePlayListTool implements MCPTool {
 
       const rawListData = await gplay.list(listOptions);
 
-      // Return complete raw response from google-play-scraper
-      return rawListData;
+      // Filter response to reduce token consumption when not in full detail mode
+      return filterAppData(rawListData, params.fullDetail || false);
     } catch (error) {
       return this.handleError(error, params);
     }

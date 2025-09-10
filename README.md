@@ -9,7 +9,8 @@ A comprehensive Node.js TypeScript MCP (Model Context Protocol) server that prov
 - **Dual Transport Support**: Implements both MCP Streamable HTTP and SSE (Server-Sent Events) transport protocols
 - **Fixed SSE Transport**: SSE transport now includes automatic MCP initialization to prevent client timeout issues
 - **Comprehensive Coverage**: 19 MCP tools covering all available functionality from both app store scraping libraries
-- **Raw Data Models**: Returns complete, unmodified responses from underlying scraping libraries
+- **Response Filtering**: Automatic filtering of verbose fields (descriptions, summaries) to reduce token usage by up to 93%
+- **Raw Data Models**: Returns complete, unmodified responses from underlying scraping libraries (when fullDetail=true)
 - **Dual Platform Support**: Complete access to both Google Play Store and Apple App Store data
 - **TypeScript**: Full type safety and modern JavaScript features
 - **Docker Ready**: Containerized deployment with multi-stage builds
@@ -175,6 +176,8 @@ node scripts/configure-tools.js preset core
 - **Core Tools**: `ENABLED_TOOLS=google-play-search,app-store-search,google-play-app-details,app-store-app-details`
 
 For detailed configuration documentation, see [TOOL_CONFIGURATION.md](./docs/TOOL_CONFIGURATION.md).
+
+For information about response filtering and token usage optimization, see [RESPONSE_FILTERING.md](./docs/RESPONSE_FILTERING.md).
 
 ## Localization and Regional Support
 

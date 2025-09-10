@@ -5,6 +5,7 @@
 
 import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
+import { filterAppData } from '../utils/response-filter';
 
 /**
  * Input parameters for Apple App Store search tool
@@ -68,8 +69,8 @@ export class AppStoreSearchTool implements MCPTool {
       country: params.country || 'us'
     });
 
-    // Return complete raw response from app-store-scraper
-    return rawSearchResults;
+    // Filter response to reduce token consumption for non-detailed results
+    return filterAppData(rawSearchResults, false);
   }
 
   /**

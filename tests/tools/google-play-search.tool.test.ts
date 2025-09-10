@@ -49,6 +49,28 @@ describe('GooglePlaySearchTool', () => {
     }
   ];
 
+  // Expected filtered response (only essential fields) when fullDetail is false
+  const mockFilteredSearchResults = [
+    {
+      appId: 'com.example.app1',
+      title: 'Test App 1',
+      developer: 'Test Developer 1',
+      free: true,
+      price: '$0',
+      icon: 'https://example.com/icon1.jpg',
+      url: 'https://play.google.com/store/apps/details?id=com.example.app1'
+    },
+    {
+      appId: 'com.example.app2',
+      title: 'Test App 2',
+      developer: 'Test Developer 2',
+      free: false,
+      price: '$2.99',
+      icon: 'https://example.com/icon2.jpg',
+      url: 'https://play.google.com/store/apps/details?id=com.example.app2'
+    }
+  ];
+
   beforeEach(() => {
     tool = new GooglePlaySearchTool();
   });

@@ -5,6 +5,7 @@
 
 import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
+import { filterAppData } from '../utils/response-filter';
 
 /**
  * Input parameters for Apple App Store list tool
@@ -124,8 +125,8 @@ export class AppStoreListTool implements MCPTool {
 
     const rawListData = await store.list(listParams);
 
-    // Return complete raw response from app-store-scraper
-    return rawListData;
+    // Filter response to reduce token consumption when not in full detail mode
+    return filterAppData(rawListData, params.fullDetail || false);
   }
 
   /**

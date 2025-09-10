@@ -48,6 +48,28 @@ describe('AppStoreSearchTool', () => {
     }
   ];
 
+  // Expected filtered response (only essential fields)
+  const mockFilteredSearchResults = [
+    {
+      id: 123456789,
+      title: 'Test App 1',
+      developer: 'Test Developer 1',
+      free: true,
+      price: 0,
+      icon: 'icon1.jpg',
+      url: 'https://apps.apple.com/app/test-app-1/id123456789'
+    },
+    {
+      id: 987654321,
+      title: 'Test App 2',
+      developer: 'Test Developer 2',
+      free: false,
+      price: 2.99,
+      icon: 'icon2.jpg',
+      url: 'https://apps.apple.com/app/test-app-2/id987654321'
+    }
+  ];
+
   beforeEach(() => {
     tool = new AppStoreSearchTool();
   });
@@ -62,7 +84,7 @@ describe('AppStoreSearchTool', () => {
     });
 
     it('should have correct description', () => {
-      expect(tool.description).toBe('Search for apps in Apple App Store with customizable result count and region options');
+      expect(tool.description).toBe('Search for apps in Apple App Store. Returns up to 100 results per request (no pagination support).');
     });
 
     it('should have valid input schema', () => {
@@ -76,7 +98,7 @@ describe('AppStoreSearchTool', () => {
           },
           num: {
             type: 'integer',
-            description: 'Number of search results to return (default: 50, max: 100)',
+            description: 'Number of search results to return (default: 50, max: 100). No pagination available - increase this value to get more results.',
             minimum: 1,
             maximum: 100,
             default: 50
@@ -100,7 +122,7 @@ describe('AppStoreSearchTool', () => {
 
       const result = await tool.execute({ query: 'test app' });
 
-      expect(result).toEqual(mockRawSearchResults);
+      expect(result).toEqual(mockFilteredSearchResults);
       expect(mockAppStoreScraper.search).toHaveBeenCalledWith({
         term: 'test app',
         num: 50,
@@ -113,7 +135,7 @@ describe('AppStoreSearchTool', () => {
 
       const result = await tool.execute({ query: 'test app', num: 25 });
 
-      expect(result).toEqual(mockRawSearchResults);
+      expect(result).toEqual(mockFilteredSearchResults);
       expect(mockAppStoreScraper.search).toHaveBeenCalledWith({
         term: 'test app',
         num: 25,
@@ -126,7 +148,7 @@ describe('AppStoreSearchTool', () => {
 
       const result = await tool.execute({ query: 'test app', country: 'ca' });
 
-      expect(result).toEqual(mockRawSearchResults);
+      expect(result).toEqual(mockFilteredSearchResults);
       expect(mockAppStoreScraper.search).toHaveBeenCalledWith({
         term: 'test app',
         num: 50,
@@ -143,7 +165,7 @@ describe('AppStoreSearchTool', () => {
         country: 'gb' 
       });
 
-      expect(result).toEqual(mockRawSearchResults);
+      expect(result).toEqual(mockFilteredSearchResults);
       expect(mockAppStoreScraper.search).toHaveBeenCalledWith({
         term: 'test app',
         num: 75,
@@ -197,7 +219,7 @@ describe('AppStoreSearchTool', () => {
 
       const result = await tool.execute({ query: 'test app' });
 
-      expect(result).toEqual(mockRawSearchResults);
+      expect(result).toEqual(mockFilteredSearchResults);
       expect(mockAppStoreScraper.search).toHaveBeenCalledWith({
         term: 'test app',
         num: 50,
@@ -210,7 +232,7 @@ describe('AppStoreSearchTool', () => {
 
       const result = await tool.execute({ query: 'test app', num: 50 });
 
-      expect(result).toEqual(mockRawSearchResults);
+      expect(result).toEqual(mockFilteredSearchResults);
       expect(mockAppStoreScraper.search).toHaveBeenCalledWith({
         term: 'test app',
         num: 50,
@@ -223,7 +245,7 @@ describe('AppStoreSearchTool', () => {
 
       const result = await tool.execute({ query: 'test app', country: 'fr' });
 
-      expect(result).toEqual(mockRawSearchResults);
+      expect(result).toEqual(mockFilteredSearchResults);
       expect(mockAppStoreScraper.search).toHaveBeenCalledWith({
         term: 'test app',
         num: 50,
@@ -234,23 +256,27 @@ describe('AppStoreSearchTool', () => {
 
 
 
-  describe('Raw Data Preservation', () => {
-    it('should return raw app-store-scraper response', async () => {
+  describe('Response Filtering', () => {
+    it('should return filtered response by default to reduce token usage', async () => {
       mockAppStoreScraper.search.mockResolvedValue(mockRawSearchResults);
 
       const result = await tool.execute({ query: 'test app' });
 
-      // Should return the complete raw response from app-store-scraper
-      expect(result).toEqual(mockRawSearchResults);
+      // Should return filtered response with only essential fields
+      expect(result).toEqual(mockFilteredSearchResults);
       expect(result).toHaveLength(2);
       expect(result[0].id).toBe(123456789);
-      expect(result[0].score).toBe(4.5);
-      expect(result[0].genre).toBe('Productivity');
-      expect(result[0].released).toBe('2023-01-01');
-      expect(result[1].price).toBe(2.99);
+      expect(result[0].title).toBe('Test App 1');
+      expect(result[0].developer).toBe('Test Developer 1');
+      expect(result[0].price).toBe(0);
+      
+      // Verbose fields should be filtered out
+      expect(result[0].score).toBeUndefined();
+      expect(result[0].genre).toBeUndefined();
+      expect(result[0].released).toBeUndefined();
     });
 
-    it('should preserve all fields from raw response', async () => {
+    it('should filter out non-essential fields even from extended responses', async () => {
       const extendedRawResponse = [
         {
           ...mockRawSearchResults[0],
@@ -264,11 +290,18 @@ describe('AppStoreSearchTool', () => {
 
       const result = await tool.execute({ query: 'test app' });
 
-      // Should preserve all fields including additional ones
-      expect(result).toEqual(extendedRawResponse);
-      expect(result[0].additionalField).toBe('additional value');
-      expect(result[0].nestedObject).toEqual({ key: 'value' });
-      expect(result[0].arrayField).toEqual([1, 2, 3]);
+      // Should filter out non-essential fields including additional ones
+      expect(result).toEqual([mockFilteredSearchResults[0]]);
+      expect(result[0].additionalField).toBeUndefined();
+      expect(result[0].nestedObject).toBeUndefined();
+      expect(result[0].arrayField).toBeUndefined();
+      expect(result[0].score).toBeUndefined();
+      expect(result[0].genre).toBeUndefined();
+      
+      // But should keep essential fields
+      expect(result[0].id).toBe(123456789);
+      expect(result[0].title).toBe('Test App 1');
+      expect(result[0].developer).toBe('Test Developer 1');
     });
   });
 });

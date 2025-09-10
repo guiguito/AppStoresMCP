@@ -5,6 +5,7 @@
 
 import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
+import { filterAppData } from '../utils/response-filter';
 
 /**
  * Input parameters for Google Play search tool
@@ -85,8 +86,8 @@ export class GooglePlaySearchTool implements MCPTool {
         fullDetail: params.fullDetail || false
       });
 
-      // Return complete raw response from google-play-scraper
-      return rawSearchResults;
+      // Filter response to reduce token consumption when not in full detail mode
+      return filterAppData(rawSearchResults, params.fullDetail || false);
     } catch (error) {
       const query = params && typeof params === 'object' ? params.query : 'unknown';
       return this.handleError(error, query);
