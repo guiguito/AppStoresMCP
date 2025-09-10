@@ -95,6 +95,87 @@ The server exposes 19 comprehensive MCP tools for complete app store data access
 
 All tools return raw, unmodified data from the underlying scraping libraries to preserve complete information and metadata.
 
+## Tool Configuration
+
+The MCP server supports selective enabling/disabling of tools through environment variables, allowing you to:
+
+- Reduce memory usage by disabling unused tools
+- Limit exposed functionality for security reasons
+- Create specialized deployments with only specific tools
+- Debug issues by isolating specific tools
+
+### Configuration Methods
+
+#### 1. Bulk Configuration
+
+**Disable Multiple Tools:**
+```bash
+# Disable specific tools (comma-separated)
+DISABLED_TOOLS=google-play-app-reviews,app-store-app-reviews,google-play-permissions
+```
+
+**Enable Only Specific Tools:**
+```bash
+# Enable only these tools (all others will be disabled)
+ENABLED_TOOLS=google-play-search,app-store-search,google-play-app-details,app-store-app-details
+```
+
+#### 2. Individual Tool Control
+
+```bash
+# Disable individual tools
+DISABLE_TOOL_GOOGLE_PLAY_SEARCH=true
+DISABLE_TOOL_APP_STORE_REVIEWS=true
+
+# Enable individual tools (when using restrictive ENABLED_TOOLS)
+ENABLE_TOOL_GOOGLE_PLAY_APP_DETAILS=true
+```
+
+#### 3. Docker Compose Configuration
+
+```yaml
+services:
+  app-store-mcp-server:
+    environment:
+      # Disable review tools
+      - DISABLED_TOOLS=google-play-app-reviews,app-store-app-reviews
+      
+      # Or enable only search and details tools
+      # - ENABLED_TOOLS=google-play-search,app-store-search,google-play-app-details,app-store-app-details
+      
+      # Individual controls
+      - DISABLE_TOOL_GOOGLE_PLAY_PERMISSIONS=true
+```
+
+### Configuration Helper
+
+Use the included configuration helper script to generate tool configurations:
+
+```bash
+# List all available tools
+node scripts/configure-tools.js list
+
+# Generate configuration for specific tools
+node scripts/configure-tools.js enable google-play-search app-store-search
+
+# Generate configuration by category
+node scripts/configure-tools.js category search
+
+# Use presets for common configurations
+node scripts/configure-tools.js preset search-only
+node scripts/configure-tools.js preset no-reviews
+node scripts/configure-tools.js preset core
+```
+
+### Common Use Cases
+
+- **Search Only**: `ENABLED_TOOLS=google-play-search,app-store-search`
+- **No Reviews**: `DISABLED_TOOLS=google-play-app-reviews,app-store-app-reviews`
+- **Google Play Only**: Disable all `app-store-*` tools
+- **Core Tools**: `ENABLED_TOOLS=google-play-search,app-store-search,google-play-app-details,app-store-app-details`
+
+For detailed configuration documentation, see [TOOL_CONFIGURATION.md](./docs/TOOL_CONFIGURATION.md).
+
 ## Localization and Regional Support
 
 The MCP tools support localization and regional customization through optional parameters:
@@ -188,6 +269,12 @@ The server can be configured using environment variables:
 - `HTTPS_CA_PATH` - Path to Certificate Authority file (optional)
 - `HTTPS_PASSPHRASE` - Private key passphrase (optional)
 
+### Tool Configuration
+- `ENABLED_TOOLS` - Comma-separated list of tools to enable (if set, only these are enabled)
+- `DISABLED_TOOLS` - Comma-separated list of tools to disable
+- `ENABLE_TOOL_<TOOL_NAME>` - Enable specific tool (e.g., `ENABLE_TOOL_GOOGLE_PLAY_SEARCH=true`)
+- `DISABLE_TOOL_<TOOL_NAME>` - Disable specific tool (e.g., `DISABLE_TOOL_APP_STORE_REVIEWS=true`)
+
 ### Example Configuration
 
 Create a `.env` file:
@@ -204,6 +291,10 @@ CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
 HTTPS_ENABLED=true
 HTTPS_KEY_PATH=./ssl/server.key
 HTTPS_CERT_PATH=./ssl/server.crt
+
+# Tool Configuration (optional)
+# DISABLED_TOOLS=google-play-app-reviews,app-store-app-reviews
+# ENABLED_TOOLS=google-play-search,app-store-search,google-play-app-details,app-store-app-details
 ```
 
 ## HTTPS Setup

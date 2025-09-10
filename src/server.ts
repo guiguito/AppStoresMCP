@@ -7,7 +7,7 @@ import { HTTPTransportHandler } from './transport/http-transport';
 import { SSETransportHandler } from './transport/sse-transport';
 import { MCPHandler } from './protocol/mcp-handler';
 import { ToolRegistry } from './registry/tool-registry';
-import { ServerConfig, loadConfig, getConfigSummary } from './config/server-config';
+import { ServerConfig, loadConfig, getConfigSummary, isToolEnabled } from './config/server-config';
 
 // Import all MCP tools
 import { GooglePlayAppDetailsTool } from './tools/google-play-app-details.tool';
@@ -134,38 +134,53 @@ export class MCPServer {
    */
   private async initializeTools(): Promise<void> {
     try {
-      // Register Google Play Store tools
-      this.toolRegistry.registerTool(new GooglePlayAppDetailsTool());
-      this.toolRegistry.registerTool(new GooglePlayAppReviewsTool());
-      this.toolRegistry.registerTool(new GooglePlaySearchTool());
-      this.toolRegistry.registerTool(new GooglePlayListTool());
-      this.toolRegistry.registerTool(new GooglePlayDeveloperTool());
-      this.toolRegistry.registerTool(new GooglePlaySuggestTool());
-      this.toolRegistry.registerTool(new GooglePlaySimilarTool());
-      this.toolRegistry.registerTool(new GooglePlayPermissionsTool());
-      this.toolRegistry.registerTool(new GooglePlayDataSafetyTool());
-      this.toolRegistry.registerTool(new GooglePlayCategoriesTool());
+      const availableTools = [
+        // Google Play Store tools
+        { name: 'google-play-app-details', class: GooglePlayAppDetailsTool },
+        { name: 'google-play-app-reviews', class: GooglePlayAppReviewsTool },
+        { name: 'google-play-search', class: GooglePlaySearchTool },
+        { name: 'google-play-list', class: GooglePlayListTool },
+        { name: 'google-play-developer', class: GooglePlayDeveloperTool },
+        { name: 'google-play-suggest', class: GooglePlaySuggestTool },
+        { name: 'google-play-similar', class: GooglePlaySimilarTool },
+        { name: 'google-play-permissions', class: GooglePlayPermissionsTool },
+        { name: 'google-play-datasafety', class: GooglePlayDataSafetyTool },
+        { name: 'google-play-categories', class: GooglePlayCategoriesTool },
+        
+        // Apple App Store tools
+        { name: 'app-store-app-details', class: AppStoreAppDetailsTool },
+        { name: 'app-store-app-reviews', class: AppStoreAppReviewsTool },
+        { name: 'app-store-search', class: AppStoreSearchTool },
+        { name: 'app-store-list', class: AppStoreListTool },
+        { name: 'app-store-developer', class: AppStoreDeveloperTool },
+        { name: 'app-store-privacy', class: AppStorePrivacyTool },
+        { name: 'app-store-suggest', class: AppStoreSuggestTool },
+        { name: 'app-store-similar', class: AppStoreSimilarTool },
+        { name: 'app-store-ratings', class: AppStoreRatingsTool }
+      ];
 
-      // Register Apple App Store tools
-      this.toolRegistry.registerTool(new AppStoreAppDetailsTool());
-      this.toolRegistry.registerTool(new AppStoreAppReviewsTool());
-      this.toolRegistry.registerTool(new AppStoreSearchTool());
-      this.toolRegistry.registerTool(new AppStoreListTool());
-      this.toolRegistry.registerTool(new AppStoreDeveloperTool());
-      this.toolRegistry.registerTool(new AppStorePrivacyTool());
-      this.toolRegistry.registerTool(new AppStoreSuggestTool());
-      this.toolRegistry.registerTool(new AppStoreSimilarTool());
-      this.toolRegistry.registerTool(new AppStoreRatingsTool());
+      const registeredTools: string[] = [];
+      const skippedTools: string[] = [];
+
+      // Register tools based on configuration
+      for (const tool of availableTools) {
+        if (isToolEnabled(tool.name, this.config)) {
+          this.toolRegistry.registerTool(new tool.class());
+          registeredTools.push(tool.name);
+        } else {
+          skippedTools.push(tool.name);
+        }
+      }
 
       const toolCount = this.toolRegistry.size();
-      const toolNames = this.toolRegistry.getToolNames();
 
       console.log(JSON.stringify({
         timestamp: new Date().toISOString(),
         level: 'info',
         type: 'tools_registered',
         message: `Successfully registered ${toolCount} MCP tools`,
-        tools: toolNames
+        registeredTools,
+        skippedTools: skippedTools.length > 0 ? skippedTools : undefined
       }));
 
     } catch (error) {

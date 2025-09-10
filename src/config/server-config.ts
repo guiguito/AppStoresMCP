@@ -39,6 +39,10 @@ export interface ServerConfig {
       initializationTimeout: number;
     };
   };
+  tools: {
+    enabledTools: Set<string>;
+    disabledTools: Set<string>;
+  };
 }
 
 /**
@@ -75,6 +79,10 @@ const DEFAULT_CONFIG: ServerConfig = {
       autoInitialize: true, // Default: enable automatic initialization
       initializationTimeout: 5000 // Default: 5 seconds
     }
+  },
+  tools: {
+    enabledTools: new Set<string>(),
+    disabledTools: new Set<string>()
   }
 };
 
@@ -119,7 +127,8 @@ export function loadConfig(): ServerConfig {
         autoInitialize: process.env.SSE_AUTO_INITIALIZE !== 'false',
         initializationTimeout: parseInt(process.env.SSE_INITIALIZATION_TIMEOUT || String(DEFAULT_CONFIG.transport.sse.initializationTimeout), 10)
       }
-    }
+    },
+    tools: loadToolsConfig()
   };
 
   // Validate configuration
@@ -189,6 +198,65 @@ function validateConfig(config: ServerConfig): void {
 }
 
 /**
+ * Load tools configuration from environment variables
+ */
+function loadToolsConfig(): { enabledTools: Set<string>; disabledTools: Set<string> } {
+  const enabledTools = new Set<string>();
+  const disabledTools = new Set<string>();
+
+  // Parse ENABLED_TOOLS environment variable (comma-separated list)
+  if (process.env.ENABLED_TOOLS) {
+    const tools = process.env.ENABLED_TOOLS.split(',').map(tool => tool.trim()).filter(tool => tool.length > 0);
+    tools.forEach(tool => enabledTools.add(tool));
+  }
+
+  // Parse DISABLED_TOOLS environment variable (comma-separated list)
+  if (process.env.DISABLED_TOOLS) {
+    const tools = process.env.DISABLED_TOOLS.split(',').map(tool => tool.trim()).filter(tool => tool.length > 0);
+    tools.forEach(tool => disabledTools.add(tool));
+  }
+
+  // Check for individual tool environment variables (ENABLE_TOOL_<TOOL_NAME> or DISABLE_TOOL_<TOOL_NAME>)
+  Object.keys(process.env).forEach(key => {
+    if (key.startsWith('ENABLE_TOOL_')) {
+      const toolName = key.replace('ENABLE_TOOL_', '').toLowerCase().replace(/_/g, '-');
+      if (process.env[key] === 'true') {
+        enabledTools.add(toolName);
+      } else if (process.env[key] === 'false') {
+        disabledTools.add(toolName);
+      }
+    } else if (key.startsWith('DISABLE_TOOL_')) {
+      const toolName = key.replace('DISABLE_TOOL_', '').toLowerCase().replace(/_/g, '-');
+      if (process.env[key] === 'true') {
+        disabledTools.add(toolName);
+      } else if (process.env[key] === 'false') {
+        enabledTools.add(toolName);
+      }
+    }
+  });
+
+  return { enabledTools, disabledTools };
+}
+
+/**
+ * Check if a tool should be enabled based on configuration
+ */
+export function isToolEnabled(toolName: string, config: ServerConfig): boolean {
+  // If tool is explicitly disabled, return false
+  if (config.tools.disabledTools.has(toolName)) {
+    return false;
+  }
+
+  // If there are enabled tools specified and this tool is not in the list, return false
+  if (config.tools.enabledTools.size > 0 && !config.tools.enabledTools.has(toolName)) {
+    return false;
+  }
+
+  // Otherwise, tool is enabled by default
+  return true;
+}
+
+/**
  * Get environment-specific configuration summary for logging
  */
 export function getConfigSummary(config: ServerConfig): Record<string, any> {
@@ -211,6 +279,8 @@ export function getConfigSummary(config: ServerConfig): Record<string, any> {
     sseInitializationTimeout: `${config.transport.sse.initializationTimeout}ms`,
     httpsEnabled: config.transport.https.enabled,
     httpsKeyPath: config.transport.https.enabled ? config.transport.https.keyPath : 'disabled',
-    httpsCertPath: config.transport.https.enabled ? config.transport.https.certPath : 'disabled'
+    httpsCertPath: config.transport.https.enabled ? config.transport.https.certPath : 'disabled',
+    enabledTools: config.tools.enabledTools.size > 0 ? Array.from(config.tools.enabledTools) : 'all',
+    disabledTools: config.tools.disabledTools.size > 0 ? Array.from(config.tools.disabledTools) : 'none'
   };
 }

@@ -15,6 +15,13 @@ services:
       - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-100}
       - SCRAPING_TIMEOUT=${SCRAPING_TIMEOUT:-30000}
       - SCRAPING_RETRIES=${SCRAPING_RETRIES:-3}
+      # Tool Configuration - Uncomment and modify as needed
+      # - DISABLED_TOOLS=${DISABLED_TOOLS:-}  # Comma-separated list of tools to disable
+      # - ENABLED_TOOLS=${ENABLED_TOOLS:-}   # Comma-separated list of tools to enable (if set, only these tools will be enabled)
+      # Individual tool controls (examples):
+      # - DISABLE_TOOL_GOOGLE_PLAY_SEARCH=${DISABLE_TOOL_GOOGLE_PLAY_SEARCH:-false}
+      # - DISABLE_TOOL_APP_STORE_SEARCH=${DISABLE_TOOL_APP_STORE_SEARCH:-false}
+      # - ENABLE_TOOL_GOOGLE_PLAY_APP_DETAILS=${ENABLE_TOOL_GOOGLE_PLAY_APP_DETAILS:-true}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
@@ -38,6 +45,9 @@ services:
       - NODE_ENV=development
       - PORT=3000
       - LOG_LEVEL=debug
+      # Tool Configuration - Uncomment and modify as needed
+      # - DISABLED_TOOLS=${DISABLED_TOOLS:-}  # Comma-separated list of tools to disable
+      # - ENABLED_TOOLS=${ENABLED_TOOLS:-}   # Comma-separated list of tools to enable (if set, only these tools will be enabled)
     volumes:
       - ./src:/app/src:ro
       - ./tsconfig.json:/app/tsconfig.json:ro
