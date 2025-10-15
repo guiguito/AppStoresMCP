@@ -5,7 +5,9 @@
 
 import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
-import { filterAppData } from '../utils/response-filter';
+
+// Use require for CommonJS compatibility with Jest mocking
+const gplay = require('google-play-scraper');
 
 /**
  * Input parameters for Google Play search tool
@@ -23,7 +25,7 @@ interface GooglePlaySearchParams {
  */
 export class GooglePlaySearchTool implements MCPTool {
   public readonly name = 'google-play-search';
-  public readonly description = 'Search for apps in Google Play Store. Returns up to 100 results per request (no pagination support).';
+  public readonly description = 'Search for apps in Google Play Store. Use num parameter to control result count.';
 
   public readonly inputSchema: JSONSchema7 = {
     type: 'object',
@@ -74,10 +76,7 @@ export class GooglePlaySearchTool implements MCPTool {
       // Validate input parameters
       this.validateParams(params);
 
-      // Fetch raw search results directly from google-play-scraper using dynamic import
-      const gplayModule = await new Function('return import("google-play-scraper")')();
-      const gplay = gplayModule.default;
-      
+      // Fetch raw search results directly from google-play-scraper
       const rawSearchResults = await gplay.search({
         term: params.query,
         num: Math.min(params.num || 50, 100), // Limit to prevent excessive requests
@@ -86,8 +85,8 @@ export class GooglePlaySearchTool implements MCPTool {
         fullDetail: params.fullDetail || false
       });
 
-      // Filter response to reduce token consumption when not in full detail mode
-      return filterAppData(rawSearchResults, params.fullDetail || false);
+      // Return complete raw response from google-play-scraper
+      return rawSearchResults;
     } catch (error) {
       const query = params && typeof params === 'object' ? params.query : 'unknown';
       return this.handleError(error, query);

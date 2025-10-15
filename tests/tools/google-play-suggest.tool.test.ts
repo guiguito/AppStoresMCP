@@ -2,22 +2,11 @@
  * Unit tests for Google Play Suggest MCP Tool
  */
 
-// Mock google-play-scraper module before importing anything else
-const mockGooglePlayScraper = {
-  app: jest.fn(),
-  reviews: jest.fn(),
-  search: jest.fn(),
-  suggest: jest.fn(),
-  sort: {
-    NEWEST: 1,
-    RATING: 2,
-    HELPFULNESS: 3
-  }
-};
-
-jest.mock('google-play-scraper', () => mockGooglePlayScraper);
-
 import { GooglePlaySuggestTool } from '../../src/tools/google-play-suggest.tool';
+
+// Use manual mock from __mocks__/google-play-scraper.js
+jest.mock('google-play-scraper');
+const mockGooglePlayScraper = require('google-play-scraper');
 
 describe('GooglePlaySuggestTool', () => {
   let tool: GooglePlaySuggestTool;

@@ -5,17 +5,8 @@
 
 import { GooglePlayScraperService, GooglePlayScraperError } from '../../src/services/google-play-scraper.service';
 
-// Mock the google-play-scraper module
-jest.mock('google-play-scraper', () => ({
-  app: jest.fn(),
-  reviews: jest.fn(),
-  search: jest.fn(),
-  sort: {
-    NEWEST: 1,
-    RATING: 2,
-    HELPFULNESS: 3
-  }
-}));
+// Use manual mock from __mocks__/google-play-scraper.js
+jest.mock('google-play-scraper');
 
 const gplay = require('google-play-scraper');
 

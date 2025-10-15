@@ -6,6 +6,9 @@
 import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
 
+// Use require for CommonJS compatibility with Jest mocking
+const gplay = require('google-play-scraper');
+
 /**
  * Google Play Categories MCP Tool implementation
  */
@@ -25,9 +28,6 @@ export class GooglePlayCategoriesTool implements MCPTool {
   async execute(): Promise<any> {
     try {
       // Fetch raw categories data directly from google-play-scraper
-      const gplayModule = await new Function('return import("google-play-scraper")')();
-      const gplay = gplayModule.default;
-      
       const rawCategoriesData = await gplay.categories();
 
       // Return complete raw response from google-play-scraper

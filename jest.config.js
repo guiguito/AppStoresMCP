@@ -20,5 +20,9 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testEnvironmentOptions: {
     NODE_ENV: 'test'
+  },
+  moduleNameMapper: {
+    '^app-store-scraper$': '<rootDir>/__mocks__/app-store-scraper.js',
+    '^google-play-scraper$': '<rootDir>/__mocks__/google-play-scraper.js'
   }
 };

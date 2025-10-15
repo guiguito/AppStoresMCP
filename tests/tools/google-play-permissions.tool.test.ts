@@ -4,13 +4,9 @@
 
 import { GooglePlayPermissionsTool } from '../../src/tools/google-play-permissions.tool';
 
-// Mock google-play-scraper
-const mockGplayPermissions = jest.fn();
-const mockGplay = {
-  permissions: mockGplayPermissions
-};
-
-jest.mock('google-play-scraper', () => mockGplay);
+// Use manual mock from __mocks__/google-play-scraper.js
+jest.mock('google-play-scraper');
+const mockGplay = require('google-play-scraper');
 
 describe('GooglePlayPermissionsTool', () => {
   let tool: GooglePlayPermissionsTool;
@@ -49,7 +45,7 @@ describe('GooglePlayPermissionsTool', () => {
         'android.permission.ACCESS_NETWORK_STATE',
         'android.permission.CAMERA'
       ];
-      mockGplayPermissions.mockResolvedValue(mockPermissionsData);
+      mockGplay.permissions.mockResolvedValue(mockPermissionsData);
 
       const result = await tool.execute({
         appId: 'com.example.app',
@@ -58,7 +54,7 @@ describe('GooglePlayPermissionsTool', () => {
       });
 
       expect(result).toEqual(mockPermissionsData);
-      expect(mockGplayPermissions).toHaveBeenCalledWith({
+      expect(mockGplay.permissions).toHaveBeenCalledWith({
         appId: 'com.example.app',
         lang: 'en',
         short: false
@@ -67,12 +63,12 @@ describe('GooglePlayPermissionsTool', () => {
 
     it('should use default values for optional parameters', async () => {
       const mockPermissionsData = ['android.permission.INTERNET'];
-      mockGplayPermissions.mockResolvedValue(mockPermissionsData);
+      mockGplay.permissions.mockResolvedValue(mockPermissionsData);
 
       const result = await tool.execute({ appId: 'com.example.app' });
 
       expect(result).toEqual(mockPermissionsData);
-      expect(mockGplayPermissions).toHaveBeenCalledWith({
+      expect(mockGplay.permissions).toHaveBeenCalledWith({
         appId: 'com.example.app',
         lang: 'en',
         short: false
@@ -81,7 +77,7 @@ describe('GooglePlayPermissionsTool', () => {
 
     it('should handle short parameter correctly', async () => {
       const mockPermissionsData = ['INTERNET', 'CAMERA'];
-      mockGplayPermissions.mockResolvedValue(mockPermissionsData);
+      mockGplay.permissions.mockResolvedValue(mockPermissionsData);
 
       const result = await tool.execute({ 
         appId: 'com.example.app',
@@ -89,7 +85,7 @@ describe('GooglePlayPermissionsTool', () => {
       });
 
       expect(result).toEqual(mockPermissionsData);
-      expect(mockGplayPermissions).toHaveBeenCalledWith({
+      expect(mockGplay.permissions).toHaveBeenCalledWith({
         appId: 'com.example.app',
         lang: 'en',
         short: true
@@ -122,7 +118,7 @@ describe('GooglePlayPermissionsTool', () => {
 
     it('should accept valid package name formats', async () => {
       const mockPermissionsData = ['android.permission.INTERNET'];
-      mockGplayPermissions.mockResolvedValue(mockPermissionsData);
+      mockGplay.permissions.mockResolvedValue(mockPermissionsData);
 
       const validAppIds = [
         'com.example.app',
@@ -132,7 +128,7 @@ describe('GooglePlayPermissionsTool', () => {
       ];
 
       for (const appId of validAppIds) {
-        mockGplayPermissions.mockClear();
+        mockGplay.permissions.mockClear();
         const result = await tool.execute({ appId });
         expect(result).toEqual(mockPermissionsData);
       }
@@ -158,7 +154,7 @@ describe('GooglePlayPermissionsTool', () => {
   describe('Error Handling', () => {
     it('should handle app not found errors', async () => {
       const error = new Error('App not found');
-      mockGplayPermissions.mockRejectedValue(error);
+      mockGplay.permissions.mockRejectedValue(error);
 
       const result = await tool.execute({ appId: 'com.nonexistent.app' });
 
@@ -170,7 +166,7 @@ describe('GooglePlayPermissionsTool', () => {
 
     it('should handle google-play-scraper errors', async () => {
       const error = new Error('Network error');
-      mockGplayPermissions.mockRejectedValue(error);
+      mockGplay.permissions.mockRejectedValue(error);
 
       const result = await tool.execute({ appId: 'com.example.app' });
 
@@ -202,7 +198,7 @@ describe('GooglePlayPermissionsTool', () => {
         'android.permission.ACCESS_COARSE_LOCATION'
       ];
 
-      mockGplayPermissions.mockResolvedValue(mockRawData);
+      mockGplay.permissions.mockResolvedValue(mockRawData);
 
       const result = await tool.execute({ appId: 'com.example.app' });
 
@@ -221,7 +217,7 @@ describe('GooglePlayPermissionsTool', () => {
         'WRITE_EXTERNAL_STORAGE'
       ];
 
-      mockGplayPermissions.mockResolvedValue(mockRawData);
+      mockGplay.permissions.mockResolvedValue(mockRawData);
 
       const result = await tool.execute({ 
         appId: 'com.example.app',
@@ -238,7 +234,7 @@ describe('GooglePlayPermissionsTool', () => {
     it('should handle empty permissions list', async () => {
       const mockRawData: string[] = [];
 
-      mockGplayPermissions.mockResolvedValue(mockRawData);
+      mockGplay.permissions.mockResolvedValue(mockRawData);
 
       const result = await tool.execute({ appId: 'com.example.app' });
 
@@ -269,7 +265,7 @@ describe('GooglePlayPermissionsTool', () => {
         }
       };
 
-      mockGplayPermissions.mockResolvedValue(mockRawData);
+      mockGplay.permissions.mockResolvedValue(mockRawData);
 
       const result = await tool.execute({ appId: 'com.example.app' });
 

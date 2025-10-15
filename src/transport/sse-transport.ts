@@ -101,12 +101,27 @@ export class SSETransportHandler {
     this.connections.set(connectionId, connection);
 
     // Send connection established event immediately
-    this.sendEvent(connectionId, 'connection', {
-      connectionId,
-      correlationId,
-      timestamp: new Date().toISOString(),
-      message: 'SSE connection established'
-    });
+    try {
+      this.sendEvent(connectionId, 'connection', {
+        connectionId,
+        correlationId,
+        timestamp: new Date().toISOString(),
+        message: 'SSE connection established'
+      });
+    } catch (error) {
+      // Connection event send failed, connection already closed by sendEvent
+      if (this.config.enableLogging) {
+        console.error(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: 'error',
+          type: 'sse_connection_event_failed',
+          connectionId,
+          correlationId,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }));
+      }
+      return; // Exit early, connection is already cleaned up
+    }
 
     // Enhanced structured logging when SSE connection is established
     if (this.config.enableLogging) {

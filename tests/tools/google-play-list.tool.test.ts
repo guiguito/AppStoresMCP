@@ -4,26 +4,9 @@
 
 import { GooglePlayListTool } from '../../src/tools/google-play-list.tool';
 
-// Mock google-play-scraper
-const mockGplayList = jest.fn();
-const mockGplay = {
-  list: mockGplayList,
-  collection: {
-    TOP_FREE: 'topselling_free',
-    TOP_PAID: 'topselling_paid',
-    NEW_FREE: 'topnewfree',
-    NEW_PAID: 'topnewpaid',
-    TRENDING: 'movers_shakers',
-    GROSSING: 'topgrossing'
-  },
-  age: {
-    AGE_RANGE1: 'AGE_RANGE1',
-    AGE_RANGE2: 'AGE_RANGE2',
-    AGE_RANGE3: 'AGE_RANGE3'
-  }
-};
-
-jest.mock('google-play-scraper', () => mockGplay);
+// Use manual mock from __mocks__/google-play-scraper.js
+jest.mock('google-play-scraper');
+const mockGplay = require('google-play-scraper');
 
 describe('GooglePlayListTool', () => {
   let tool: GooglePlayListTool;
@@ -64,7 +47,7 @@ describe('GooglePlayListTool', () => {
         { appId: 'com.example.app1', title: 'Test App 1' },
         { appId: 'com.example.app2', title: 'Test App 2' }
       ];
-      mockGplayList.mockResolvedValue(mockListData);
+      mockGplay.list.mockResolvedValue(mockListData);
 
       const result = await tool.execute({
         collection: 'TOP_FREE',
@@ -75,7 +58,7 @@ describe('GooglePlayListTool', () => {
       });
 
       expect(result).toEqual(mockListData);
-      expect(mockGplayList).toHaveBeenCalledWith({
+      expect(mockGplay.list).toHaveBeenCalledWith({
         collection: 'topselling_free',
         num: 10,
         lang: 'en',
@@ -86,12 +69,12 @@ describe('GooglePlayListTool', () => {
 
     it('should use default values when no parameters provided', async () => {
       const mockListData = [{ appId: 'com.example.app', title: 'Test App' }];
-      mockGplayList.mockResolvedValue(mockListData);
+      mockGplay.list.mockResolvedValue(mockListData);
 
       const result = await tool.execute();
 
       expect(result).toEqual(mockListData);
-      expect(mockGplayList).toHaveBeenCalledWith({
+      expect(mockGplay.list).toHaveBeenCalledWith({
         num: 50,
         lang: 'en',
         country: 'us',
@@ -101,14 +84,14 @@ describe('GooglePlayListTool', () => {
 
     it('should handle category parameter', async () => {
       const mockListData = [{ appId: 'com.example.game', title: 'Test Game' }];
-      mockGplayList.mockResolvedValue(mockListData);
+      mockGplay.list.mockResolvedValue(mockListData);
 
       await tool.execute({
         category: 'GAME',
         collection: 'TOP_FREE'
       });
 
-      expect(mockGplayList).toHaveBeenCalledWith({
+      expect(mockGplay.list).toHaveBeenCalledWith({
         collection: 'topselling_free',
         category: 'GAME',
         num: 50,
@@ -120,14 +103,14 @@ describe('GooglePlayListTool', () => {
 
     it('should handle age parameter', async () => {
       const mockListData = [{ appId: 'com.example.kids', title: 'Kids App' }];
-      mockGplayList.mockResolvedValue(mockListData);
+      mockGplay.list.mockResolvedValue(mockListData);
 
       await tool.execute({
         age: 'AGE_RANGE1',
         collection: 'TOP_FREE'
       });
 
-      expect(mockGplayList).toHaveBeenCalledWith({
+      expect(mockGplay.list).toHaveBeenCalledWith({
         collection: 'topselling_free',
         age: 'AGE_RANGE1',
         num: 50,
@@ -173,7 +156,7 @@ describe('GooglePlayListTool', () => {
   describe('Collection Mapping', () => {
     it('should map collection strings correctly', async () => {
       const mockListData = [{ appId: 'com.example.app', title: 'Test App' }];
-      mockGplayList.mockResolvedValue(mockListData);
+      mockGplay.list.mockResolvedValue(mockListData);
 
       const collections = [
         { input: 'TOP_FREE', expected: 'topselling_free' },
@@ -185,10 +168,10 @@ describe('GooglePlayListTool', () => {
       ];
 
       for (const { input, expected } of collections) {
-        mockGplayList.mockClear();
+        mockGplay.list.mockClear();
         await tool.execute({ collection: input });
         
-        expect(mockGplayList).toHaveBeenCalledWith(
+        expect(mockGplay.list).toHaveBeenCalledWith(
           expect.objectContaining({ collection: expected })
         );
       }
@@ -198,7 +181,7 @@ describe('GooglePlayListTool', () => {
   describe('Error Handling', () => {
     it('should handle google-play-scraper errors', async () => {
       const error = new Error('Network error');
-      mockGplayList.mockRejectedValue(error);
+      mockGplay.list.mockRejectedValue(error);
 
       const result = await tool.execute({ collection: 'TOP_FREE' });
 
@@ -241,7 +224,7 @@ describe('GooglePlayListTool', () => {
         }
       };
 
-      mockGplayList.mockResolvedValue(mockRawData);
+      mockGplay.list.mockResolvedValue(mockRawData);
 
       const result = await tool.execute({ collection: 'TOP_FREE' });
 

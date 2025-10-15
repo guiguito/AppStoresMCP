@@ -266,7 +266,8 @@ export class HTTPTransportHandler {
       this.handleMCPRequest(mcpReq, res);
     });
 
-    // Note: 404 handler and global error handler are set up after SSE routes
+    // Set up 404 and error handlers (will be called again if SSE routes are added, but that's safe)
+    this.setupFinalHandlers();
   }
 
   /**

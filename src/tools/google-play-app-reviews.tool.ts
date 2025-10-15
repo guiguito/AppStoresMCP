@@ -7,6 +7,9 @@ import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
 import { filterReviewData } from '../utils/response-filter';
 
+// Use require for CommonJS compatibility with Jest mocking
+const gplay = require('google-play-scraper');
+
 /**
  * Input parameters for Google Play app reviews tool
  */
@@ -87,9 +90,6 @@ export class GooglePlayAppReviewsTool implements MCPTool {
       this.validateParams(params);
 
       // Fetch raw app reviews directly from google-play-scraper
-      const gplayModule = await new Function('return import("google-play-scraper")')();
-      const gplay = gplayModule.default;
-      
       const reviewsOptions: any = {
         appId: params.appId,
         num: Math.min(params.num || 100, 150), // Limit to prevent excessive requests
@@ -161,8 +161,6 @@ export class GooglePlayAppReviewsTool implements MCPTool {
    * @private
    */
   private async mapSortOption(sort?: string): Promise<number> {
-    const gplayModule = await new Function('return import("google-play-scraper")')();
-    const gplay = gplayModule.default;
     switch (sort) {
       case 'newest':
         return gplay.sort.NEWEST;

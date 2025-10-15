@@ -2,29 +2,11 @@
  * Unit tests for Google Play App Reviews MCP Tool
  */
 
-// Mock google-play-scraper module before importing anything else
-const mockGooglePlayScraper = {
-  app: jest.fn(),
-  reviews: jest.fn(),
-  search: jest.fn(),
-  sort: {
-    NEWEST: 1,
-    RATING: 2,
-    HELPFULNESS: 3
-  }
-};
-
-jest.mock('google-play-scraper', () => mockGooglePlayScraper);
-
-// Mock the dynamic import used in the tool
-global.Function = jest.fn().mockImplementation((code) => {
-  if (code === 'return import("google-play-scraper")') {
-    return () => Promise.resolve({ default: mockGooglePlayScraper });
-  }
-  return Function.prototype.constructor.call(this, code);
-});
-
 import { GooglePlayAppReviewsTool } from '../../src/tools/google-play-app-reviews.tool';
+
+// Use manual mock from __mocks__/google-play-scraper.js
+jest.mock('google-play-scraper');
+const mockGooglePlayScraper = require('google-play-scraper');
 
 describe('GooglePlayAppReviewsTool', () => {
   let tool: GooglePlayAppReviewsTool;

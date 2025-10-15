@@ -12,7 +12,7 @@ describe('HTTPTransportHandler', () => {
   let mockRequestHandler: jest.Mock;
 
   const defaultConfig: HTTPTransportConfig = {
-    port: 3000,
+    port: 0, // Use port 0 to let OS assign a random available port
     enableLogging: false, // Disable logging for tests
     requestTimeout: 5000
   };
@@ -346,7 +346,14 @@ describe('HTTPTransportHandler', () => {
         .send({ test: 'data' })
         .expect(404);
 
-      expect(response.body.error.message).toContain('POST /unknown-route');
+      expect(response.body).toEqual({
+        jsonrpc: '2.0',
+        id: expect.any(String),
+        error: {
+          code: MCPErrorCode.METHOD_NOT_FOUND,
+          message: expect.stringContaining('POST /unknown-route')
+        }
+      });
     });
   });
 

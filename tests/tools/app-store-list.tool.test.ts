@@ -4,16 +4,8 @@
 
 import { AppStoreListTool } from '../../src/tools/app-store-list.tool';
 
-// Mock app-store-scraper
-jest.mock('app-store-scraper', () => ({
-  list: jest.fn(),
-  collection: {
-    TOP_FREE: 'top-free',
-    TOP_PAID: 'top-paid',
-    TOP_GROSSING: 'top-grossing'
-  }
-}));
-
+// Use manual mock from __mocks__/app-store-scraper.js
+jest.mock('app-store-scraper');
 const mockStore = require('app-store-scraper');
 
 describe('AppStoreListTool', () => {

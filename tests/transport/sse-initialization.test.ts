@@ -749,6 +749,7 @@ describe('SSE Initialization Functionality', () => {
       });
 
       // At this point, only initialize should have been called
+      // Wait for initialization to start (200ms delay) + processing time
       setTimeout(() => {
         expect(mockRequestHandler).toHaveBeenCalledTimes(1);
         expect(mockRequestHandler).toHaveBeenCalledWith(
@@ -775,7 +776,7 @@ describe('SSE Initialization Functionality', () => {
           });
           done();
         }, 100);
-      }, 100);
+      }, 300); // Account for 200ms initialization delay
     }, 10000);
   });
 });

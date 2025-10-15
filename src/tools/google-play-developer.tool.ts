@@ -6,6 +6,9 @@
 import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
 
+// Use require for CommonJS compatibility with Jest mocking
+const gplay = require('google-play-scraper');
+
 /**
  * Input parameters for Google Play developer tool
  */
@@ -23,7 +26,7 @@ interface GooglePlayDeveloperParams {
  */
 export class GooglePlayDeveloperTool implements MCPTool {
   public readonly name = 'google-play-developer';
-  public readonly description = 'Get apps by developer from Google Play Store with token-based pagination. Use nextPaginationToken from response for subsequent pages.';
+  public readonly description = 'Get apps by developer from Google Play Store';
 
   public readonly inputSchema: JSONSchema7 = {
     type: 'object',
@@ -75,16 +78,12 @@ export class GooglePlayDeveloperTool implements MCPTool {
       this.validateParams(params);
 
       // Fetch raw developer data directly from google-play-scraper
-      const gplayModule = await new Function('return import("google-play-scraper")')();
-      const gplay = gplayModule.default;
-      
       const developerOptions: any = {
         devId: params.devId,
         lang: params.lang || 'en',
         country: params.country || 'us',
         num: Math.min(params.num || 50, 100),
-        fullDetail: params.fullDetail || false,
-        paginate: true // Enable pagination
+        fullDetail: params.fullDetail || false
       };
 
       // Only add nextPaginationToken if it's provided and not empty

@@ -5,7 +5,6 @@
 
 import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
-import { filterAppData } from '../utils/response-filter';
 
 /**
  * Input parameters for Apple App Store list tool
@@ -33,6 +32,14 @@ export class AppStoreListTool implements MCPTool {
         type: 'string',
         description: 'Collection to retrieve from Apple App Store',
         enum: [
+          'top-free',
+          'top-paid',
+          'top-grossing',
+          'top-free-ipad',
+          'top-paid-ipad',
+          'new',
+          'new-free',
+          'new-paid',
           'topmacapps',
           'topfreemacapps',
           'topgrossingmacapps',
@@ -47,7 +54,7 @@ export class AppStoreListTool implements MCPTool {
           'toppaidapplications',
           'toppaidipadapplications'
         ],
-        default: 'topfreeapplications'
+        default: 'top-free'
       },
       category: {
         type: 'string',
@@ -125,8 +132,8 @@ export class AppStoreListTool implements MCPTool {
 
     const rawListData = await store.list(listParams);
 
-    // Filter response to reduce token consumption when not in full detail mode
-    return filterAppData(rawListData, params.fullDetail || false);
+    // Return complete raw response from app-store-scraper
+    return rawListData;
   }
 
   /**
@@ -142,8 +149,8 @@ export class AppStoreListTool implements MCPTool {
       throw new Error('collection must be a string');
     }
 
-    if (params.category && typeof params.category !== 'string' && typeof params.category !== 'number') {
-      throw new Error('category must be a string or number');
+    if (params.category && typeof params.category !== 'string') {
+      throw new Error('category must be a string');
     }
 
     if (params.country && (typeof params.country !== 'string' || !/^[a-z]{2}$/.test(params.country))) {

@@ -5,7 +5,9 @@
 
 import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
-import { filterAppData } from '../utils/response-filter';
+
+// Use require for CommonJS compatibility with Jest mocking
+const gplay = require('google-play-scraper');
 
 /**
  * Input parameters for Google Play list tool
@@ -25,7 +27,7 @@ interface GooglePlayListParams {
  */
 export class GooglePlayListTool implements MCPTool {
   public readonly name = 'google-play-list';
-  public readonly description = 'Get app lists from Google Play Store collections and categories. Returns up to 100 results per request (no pagination support).';
+  public readonly description = 'Get app lists from Google Play Store collections and categories';
 
   public readonly inputSchema: JSONSchema7 = {
     type: 'object',
@@ -33,7 +35,7 @@ export class GooglePlayListTool implements MCPTool {
       collection: {
         type: 'string',
         description: 'Collection type from Google Play Store',
-        enum: ['TOP_FREE', 'TOP_PAID', 'GROSSING'],
+        enum: ['TOP_FREE', 'TOP_PAID', 'GROSSING', 'TRENDING', 'NEW_FREE', 'NEW_PAID'],
         default: 'TOP_FREE'
       },
       category: {
@@ -57,7 +59,7 @@ export class GooglePlayListTool implements MCPTool {
       age: {
         type: 'string',
         description: 'Age rating filter for apps',
-        enum: ['FIVE_UNDER', 'SIX_EIGHT', 'NINE_UP']
+        enum: ['FIVE_UNDER', 'SIX_EIGHT', 'NINE_UP', 'AGE_RANGE1', 'AGE_RANGE2', 'AGE_RANGE3']
       },
       num: {
         type: 'integer',
@@ -96,9 +98,6 @@ export class GooglePlayListTool implements MCPTool {
       this.validateParams(params);
 
       // Fetch raw list data directly from google-play-scraper
-      const gplayModule = await new Function('return import("google-play-scraper")')();
-      const gplay = gplayModule.default;
-      
       const listOptions: any = {
         num: Math.min(params.num || 50, 100),
         lang: params.lang || 'en',
@@ -123,8 +122,8 @@ export class GooglePlayListTool implements MCPTool {
 
       const rawListData = await gplay.list(listOptions);
 
-      // Filter response to reduce token consumption when not in full detail mode
-      return filterAppData(rawListData, params.fullDetail || false);
+      // Return complete raw response from google-play-scraper
+      return rawListData;
     } catch (error) {
       return this.handleError(error, params);
     }
@@ -173,9 +172,6 @@ export class GooglePlayListTool implements MCPTool {
    * @private
    */
   private async mapCollection(collection: string): Promise<any> {
-    const gplayModule = await new Function('return import("google-play-scraper")')();
-    const gplay = gplayModule.default;
-    
     switch (collection) {
       case 'TOP_FREE':
         return gplay.collection.TOP_FREE;
@@ -183,6 +179,12 @@ export class GooglePlayListTool implements MCPTool {
         return gplay.collection.TOP_PAID;
       case 'GROSSING':
         return gplay.collection.GROSSING;
+      case 'TRENDING':
+        return gplay.collection.TRENDING;
+      case 'NEW_FREE':
+        return gplay.collection.NEW_FREE;
+      case 'NEW_PAID':
+        return gplay.collection.NEW_PAID;
       default:
         return gplay.collection.TOP_FREE;
     }
@@ -193,9 +195,6 @@ export class GooglePlayListTool implements MCPTool {
    * @private
    */
   private async mapCategory(category: string): Promise<any> {
-    const gplayModule = await new Function('return import("google-play-scraper")')();
-    const gplay = gplayModule.default;
-    
     // The category constants in google-play-scraper are the same as the string values
     // so we can directly use the category constant
     return (gplay.category as any)[category] || category;
@@ -206,9 +205,6 @@ export class GooglePlayListTool implements MCPTool {
    * @private
    */
   private async mapAge(age: string): Promise<any> {
-    const gplayModule = await new Function('return import("google-play-scraper")')();
-    const gplay = gplayModule.default;
-    
     switch (age) {
       case 'FIVE_UNDER':
         return gplay.age.FIVE_UNDER;
@@ -216,6 +212,10 @@ export class GooglePlayListTool implements MCPTool {
         return gplay.age.SIX_EIGHT;
       case 'NINE_UP':
         return gplay.age.NINE_UP;
+      case 'AGE_RANGE1':
+      case 'AGE_RANGE2':
+      case 'AGE_RANGE3':
+        return age; // Pass through AGE_RANGE values directly
       default:
         return undefined;
     }

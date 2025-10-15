@@ -164,6 +164,7 @@ describe('SSE Transport Configuration Options', () => {
       handler.handleSSEConnection(mockReq as Request, mockRes as Response);
 
       // Wait longer than the timeout to ensure it triggers
+      // Timeline: 200ms autoInit delay + 100ms timeout = 300ms total, so wait 400ms
       setTimeout(() => {
         expect(consoleErrorSpy).toHaveBeenCalledWith(
           expect.stringContaining('"type":"sse_initialization_timeout"')
@@ -174,7 +175,7 @@ describe('SSE Transport Configuration Options', () => {
         expect(handler.getConnectionCount()).toBe(0); // Connection should be closed
         handler.stop();
         done();
-      }, 300); // Wait 300ms for 100ms timeout
+      }, 400);
     }, 10000);
 
     it('should use default timeout when not specified', (done) => {
@@ -235,6 +236,7 @@ describe('SSE Transport Configuration Options', () => {
       handler.handleSSEConnection(mockReq as Request, mockRes as Response);
 
       // Wait longer than the timeout to ensure it triggers
+      // Timeline: 200ms autoInit delay + 100ms timeout = 300ms total, so wait 400ms
       setTimeout(() => {
         // Should send timeout error response via SSE
         expect(mockRes.write).toHaveBeenCalledWith(
@@ -245,7 +247,7 @@ describe('SSE Transport Configuration Options', () => {
         );
         handler.stop();
         done();
-      }, 300); // Wait 300ms for 100ms timeout
+      }, 400);
     }, 10000);
   });
 

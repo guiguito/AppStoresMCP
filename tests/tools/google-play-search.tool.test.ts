@@ -2,21 +2,11 @@
  * Unit tests for Google Play Search MCP Tool
  */
 
-// Mock google-play-scraper module before importing anything else
-const mockGooglePlayScraper = {
-  app: jest.fn(),
-  reviews: jest.fn(),
-  search: jest.fn(),
-  sort: {
-    NEWEST: 1,
-    RATING: 2,
-    HELPFULNESS: 3
-  }
-};
-
-jest.mock('google-play-scraper', () => mockGooglePlayScraper);
-
 import { GooglePlaySearchTool } from '../../src/tools/google-play-search.tool';
+
+// Use manual mock from __mocks__/google-play-scraper.js
+jest.mock('google-play-scraper');
+const mockGooglePlayScraper = require('google-play-scraper');
 
 describe('GooglePlaySearchTool', () => {
   let tool: GooglePlaySearchTool;
@@ -46,28 +36,6 @@ describe('GooglePlaySearchTool', () => {
       url: 'https://play.google.com/store/apps/details?id=com.example.app2',
       genre: 'Games',
       installs: '10,000+'
-    }
-  ];
-
-  // Expected filtered response (only essential fields) when fullDetail is false
-  const mockFilteredSearchResults = [
-    {
-      appId: 'com.example.app1',
-      title: 'Test App 1',
-      developer: 'Test Developer 1',
-      free: true,
-      price: '$0',
-      icon: 'https://example.com/icon1.jpg',
-      url: 'https://play.google.com/store/apps/details?id=com.example.app1'
-    },
-    {
-      appId: 'com.example.app2',
-      title: 'Test App 2',
-      developer: 'Test Developer 2',
-      free: false,
-      price: '$2.99',
-      icon: 'https://example.com/icon2.jpg',
-      url: 'https://play.google.com/store/apps/details?id=com.example.app2'
     }
   ];
 

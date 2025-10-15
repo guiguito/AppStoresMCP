@@ -6,6 +6,9 @@
 import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
 
+// Use require for CommonJS compatibility with Jest mocking
+const gplay = require('google-play-scraper');
+
 /**
  * Input parameters for Google Play data safety tool
  */
@@ -49,9 +52,6 @@ export class GooglePlayDataSafetyTool implements MCPTool {
       this.validateParams(params);
 
       // Fetch raw data safety data directly from google-play-scraper
-      const gplayModule = await new Function('return import("google-play-scraper")')();
-      const gplay = gplayModule.default;
-      
       const datasafetyOptions = {
         appId: params.appId,
         lang: params.lang || 'en'

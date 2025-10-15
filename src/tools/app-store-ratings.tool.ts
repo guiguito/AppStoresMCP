@@ -31,14 +31,21 @@ export class AppStoreRatingsTool implements MCPTool {
         description: 'The Apple App Store app ID (numeric ID, e.g., 123456789)',
         pattern: '^\\d+$'
       },
-
+      appId: {
+        type: 'string',
+        description: 'Alternative parameter name for app ID (numeric ID, e.g., 123456789)',
+        pattern: '^\\d+$'
+      },
       country: {
         type: 'string',
         description: 'Country code for region-specific ratings (default: us)',
         pattern: '^[a-z]{2}$'
       }
     },
-    required: ['id'],
+    anyOf: [
+      { required: ['id'] },
+      { required: ['appId'] }
+    ],
     additionalProperties: false
   };
 
@@ -55,8 +62,8 @@ export class AppStoreRatingsTool implements MCPTool {
     // Validate input parameters
     this.validateParams(params);
 
-    // Use id parameter
-    const appId = params.id;
+    // Use id or appId parameter
+    const appId = params.id || params.appId;
 
     // Prepare options
     const options: { country?: string } = {};
@@ -80,12 +87,13 @@ export class AppStoreRatingsTool implements MCPTool {
       throw new Error('Parameters must be an object');
     }
 
-    if (!params.id || typeof params.id !== 'string' || params.id.trim().length === 0) {
-      throw new Error('id is required and must be a non-empty string');
+    const id = params.id || params.appId;
+    if (!id || typeof id !== 'string' || id.trim().length === 0) {
+      throw new Error('id or appId is required and must be a non-empty string');
     }
 
-    if (!/^\d+$/.test(params.id.trim())) {
-      throw new Error('id must be a numeric string for Apple App Store');
+    if (!/^\d+$/.test(id.trim())) {
+      throw new Error('id or appId must be a numeric string for Apple App Store');
     }
 
     // Validate country parameter if provided

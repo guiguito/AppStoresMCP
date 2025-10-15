@@ -5,25 +5,8 @@
 
 import { AppStoreScraperService, AppStoreScraperError } from '../../src/services/app-store-scraper.service';
 
-// Mock the app-store-scraper module
-jest.mock('app-store-scraper', () => ({
-  app: jest.fn(),
-  reviews: jest.fn(),
-  search: jest.fn(),
-  list: jest.fn(),
-  privacy: jest.fn(),
-  suggest: jest.fn(),
-  similar: jest.fn(),
-  sort: {
-    RECENT: 'recent',
-    HELPFUL: 'helpful'
-  },
-  collection: {
-    TOP_FREE: 'top-free',
-    TOP_PAID: 'top-paid',
-    TOP_GROSSING: 'top-grossing'
-  }
-}));
+// Use manual mock from __mocks__/app-store-scraper.js
+jest.mock('app-store-scraper');
 
 const store = require('app-store-scraper');
 

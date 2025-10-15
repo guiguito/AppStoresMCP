@@ -4,13 +4,9 @@
 
 import { GooglePlayDataSafetyTool } from '../../src/tools/google-play-datasafety.tool';
 
-// Mock google-play-scraper
-const mockGplayDataSafety = jest.fn();
-const mockGplay = {
-  datasafety: mockGplayDataSafety
-};
-
-jest.mock('google-play-scraper', () => mockGplay);
+// Use manual mock from __mocks__/google-play-scraper.js
+jest.mock('google-play-scraper');
+const mockGplay = require('google-play-scraper');
 
 describe('GooglePlayDataSafetyTool', () => {
   let tool: GooglePlayDataSafetyTool;
@@ -63,7 +59,7 @@ describe('GooglePlayDataSafetyTool', () => {
           dataCanBeDeleted: true
         }
       };
-      mockGplayDataSafety.mockResolvedValue(mockDataSafetyData);
+      mockGplay.datasafety.mockResolvedValue(mockDataSafetyData);
 
       const result = await tool.execute({
         appId: 'com.example.app',
@@ -71,7 +67,7 @@ describe('GooglePlayDataSafetyTool', () => {
       });
 
       expect(result).toEqual(mockDataSafetyData);
-      expect(mockGplayDataSafety).toHaveBeenCalledWith({
+      expect(mockGplay.datasafety).toHaveBeenCalledWith({
         appId: 'com.example.app',
         lang: 'en'
       });
@@ -83,12 +79,12 @@ describe('GooglePlayDataSafetyTool', () => {
         dataCollected: [],
         securityPractices: {}
       };
-      mockGplayDataSafety.mockResolvedValue(mockDataSafetyData);
+      mockGplay.datasafety.mockResolvedValue(mockDataSafetyData);
 
       const result = await tool.execute({ appId: 'com.example.app' });
 
       expect(result).toEqual(mockDataSafetyData);
-      expect(mockGplayDataSafety).toHaveBeenCalledWith({
+      expect(mockGplay.datasafety).toHaveBeenCalledWith({
         appId: 'com.example.app',
         lang: 'en'
       });
@@ -120,7 +116,7 @@ describe('GooglePlayDataSafetyTool', () => {
 
     it('should accept valid package name formats', async () => {
       const mockDataSafetyData = { dataShared: [], dataCollected: [] };
-      mockGplayDataSafety.mockResolvedValue(mockDataSafetyData);
+      mockGplay.datasafety.mockResolvedValue(mockDataSafetyData);
 
       const validAppIds = [
         'com.example.app',
@@ -130,7 +126,7 @@ describe('GooglePlayDataSafetyTool', () => {
       ];
 
       for (const appId of validAppIds) {
-        mockGplayDataSafety.mockClear();
+        mockGplay.datasafety.mockClear();
         const result = await tool.execute({ appId });
         expect(result).toEqual(mockDataSafetyData);
       }
@@ -148,7 +144,7 @@ describe('GooglePlayDataSafetyTool', () => {
   describe('Error Handling', () => {
     it('should handle app not found errors', async () => {
       const error = new Error('App not found');
-      mockGplayDataSafety.mockRejectedValue(error);
+      mockGplay.datasafety.mockRejectedValue(error);
 
       const result = await tool.execute({ appId: 'com.nonexistent.app' });
 
@@ -160,7 +156,7 @@ describe('GooglePlayDataSafetyTool', () => {
 
     it('should handle google-play-scraper errors', async () => {
       const error = new Error('Network error');
-      mockGplayDataSafety.mockRejectedValue(error);
+      mockGplay.datasafety.mockRejectedValue(error);
 
       const result = await tool.execute({ appId: 'com.example.app' });
 
@@ -222,7 +218,7 @@ describe('GooglePlayDataSafetyTool', () => {
         }
       };
 
-      mockGplayDataSafety.mockResolvedValue(mockRawData);
+      mockGplay.datasafety.mockResolvedValue(mockRawData);
 
       const result = await tool.execute({ appId: 'com.example.app' });
 
@@ -244,7 +240,7 @@ describe('GooglePlayDataSafetyTool', () => {
         metadata: null
       };
 
-      mockGplayDataSafety.mockResolvedValue(mockRawData);
+      mockGplay.datasafety.mockResolvedValue(mockRawData);
 
       const result = await tool.execute({ appId: 'com.example.app' });
 
@@ -302,7 +298,7 @@ describe('GooglePlayDataSafetyTool', () => {
         }
       };
 
-      mockGplayDataSafety.mockResolvedValue(mockRawData);
+      mockGplay.datasafety.mockResolvedValue(mockRawData);
 
       const result = await tool.execute({ appId: 'com.example.app' });
 
@@ -332,7 +328,7 @@ describe('GooglePlayDataSafetyTool', () => {
         language: 'fr'
       };
 
-      mockGplayDataSafety.mockResolvedValue(mockRawData);
+      mockGplay.datasafety.mockResolvedValue(mockRawData);
 
       const result = await tool.execute({ 
         appId: 'com.example.app',
@@ -342,7 +338,7 @@ describe('GooglePlayDataSafetyTool', () => {
       expect(result).toEqual(mockRawData);
       expect(result.language).toBe('fr');
       expect(result.dataShared[0].category).toBe('Informations personnelles');
-      expect(mockGplayDataSafety).toHaveBeenCalledWith({
+      expect(mockGplay.datasafety).toHaveBeenCalledWith({
         appId: 'com.example.app',
         lang: 'fr'
       });
