@@ -34,7 +34,7 @@ export class AppStorePrivacyTool implements MCPTool {
   };
 
   constructor() {
-    // No dependencies needed - calling app-store-scraper directly
+    // No dependencies needed - calling app-store-scraper-ts directly
   }
 
   /**
@@ -44,14 +44,14 @@ export class AppStorePrivacyTool implements MCPTool {
     // Validate input parameters
     this.validateParams(params);
 
-    // Fetch raw privacy data directly from app-store-scraper
-    const store = require('app-store-scraper');
+    // Fetch raw privacy data directly from app-store-scraper-ts
+    const store = await import('app-store-scraper-ts');
     
     const rawPrivacyData = await store.privacy({
       id: params.id
     });
 
-    // Return complete raw response from app-store-scraper
+    // Return complete raw response from app-store-scraper-ts
     return rawPrivacyData;
   }
 

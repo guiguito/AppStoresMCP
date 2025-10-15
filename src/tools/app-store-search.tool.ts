@@ -50,18 +50,18 @@ export class AppStoreSearchTool implements MCPTool {
   };
 
   constructor() {
-    // No longer using scraper service - calling app-store-scraper directly
+    // No longer using scraper service - calling app-store-scraper-ts directly
   }
 
   /**
-   * Execute the Apple App Store search tool
+   * Execute the search tool
    */
   async execute(params: AppStoreSearchParams): Promise<any> {
     // Validate input parameters
     this.validateParams(params);
 
-    // Fetch raw search results directly from app-store-scraper
-    const store = require('app-store-scraper');
+    // Fetch raw search results directly from app-store-scraper-ts
+    const store = await import('app-store-scraper-ts');
     
     const rawSearchResults = await store.search({
       term: params.query,

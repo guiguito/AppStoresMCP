@@ -62,7 +62,7 @@ export class AppStoreAppReviewsTool implements MCPTool {
   };
 
   constructor() {
-    // No longer using scraper service - calling app-store-scraper directly
+    // No longer using scraper service - calling app-store-scraper-ts directly
   }
 
   /**
@@ -72,8 +72,8 @@ export class AppStoreAppReviewsTool implements MCPTool {
     // Validate input parameters
     this.validateParams(params);
 
-    // Fetch raw app reviews directly from app-store-scraper
-    const store = require('app-store-scraper');
+    // Fetch raw app reviews directly from app-store-scraper-ts
+    const store = await import('app-store-scraper-ts');
     
     const reviewsOptions: any = {
       id: params.appId,
@@ -129,18 +129,16 @@ export class AppStoreAppReviewsTool implements MCPTool {
    * @private
    */
   private mapSortOption(sort?: string): string {
-    const store = require('app-store-scraper');
     switch (sort) {
       case 'newest':
-        return store.sort.RECENT;
+      case 'mostRecent':
+        return 'mostRecent';
       case 'rating':
-        return store.sort.HELPFUL;
-      case 'helpfulness':
-        return store.sort.HELPFUL;
+      case 'helpful':
+      case 'mostHelpful':
+        return 'mostHelpful';
       default:
-        return store.sort.RECENT;
+        return 'mostRecent';
     }
   }
-
-
 }

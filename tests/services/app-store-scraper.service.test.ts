@@ -1,14 +1,14 @@
 /**
  * Unit tests for Apple App Store scraper service
- * Tests all methods with mocked app-store-scraper responses
+ * Tests all methods with mocked app-store-scraper-ts responses
  */
 
 import { AppStoreScraperService, AppStoreScraperError } from '../../src/services/app-store-scraper.service';
 
-// Use manual mock from __mocks__/app-store-scraper.js
-jest.mock('app-store-scraper');
+// Use manual mock from __mocks__/app-store-scraper-ts
+jest.mock('app-store-scraper-ts');
 
-const store = require('app-store-scraper');
+const store = require('app-store-scraper-ts');
 
 describe('AppStoreScraperService', () => {
   let service: AppStoreScraperService;
@@ -159,7 +159,7 @@ describe('AppStoreScraperService', () => {
       expect(store.reviews).toHaveBeenCalledWith({
         id: '123456789',
         page: 1,
-        sort: 'recent',
+        sort: 'mostHelpful',
         country: 'us'
       });
 
@@ -193,7 +193,7 @@ describe('AppStoreScraperService', () => {
       expect(store.reviews).toHaveBeenCalledWith({
         id: '123456789',
         page: 2,
-        sort: 'helpful',
+        sort: 'mostHelpful',
         country: 'us'
       });
     });
@@ -394,19 +394,19 @@ describe('AppStoreScraperService', () => {
 
       // Test newest mapping
       await service.getAppReviews('123456789', { sort: 'newest' });
-      expect(store.reviews).toHaveBeenCalledWith(expect.objectContaining({ sort: 'recent' }));
+      expect(store.reviews).toHaveBeenCalledWith(expect.objectContaining({ sort: 'mostRecent' }));
 
       // Test rating mapping
       await service.getAppReviews('123456789', { sort: 'rating' });
-      expect(store.reviews).toHaveBeenCalledWith(expect.objectContaining({ sort: 'helpful' }));
+      expect(store.reviews).toHaveBeenCalledWith(expect.objectContaining({ sort: 'mostHelpful' }));
 
       // Test helpfulness mapping
       await service.getAppReviews('123456789', { sort: 'helpfulness' });
-      expect(store.reviews).toHaveBeenCalledWith(expect.objectContaining({ sort: 'helpful' }));
+      expect(store.reviews).toHaveBeenCalledWith(expect.objectContaining({ sort: 'mostHelpful' }));
 
-      // Test default mapping
+      // Test default mapping  
       await service.getAppReviews('123456789', { sort: 'unknown' as any });
-      expect(store.reviews).toHaveBeenCalledWith(expect.objectContaining({ sort: 'recent' }));
+      expect(store.reviews).toHaveBeenCalledWith(expect.objectContaining({ sort: 'mostHelpful' }));
     });
   });
 
@@ -439,7 +439,7 @@ describe('AppStoreScraperService', () => {
       const result = await service.list();
 
       expect(store.list).toHaveBeenCalledWith({
-        collection: 'top-free',
+        collection: 'topfreeapplications',
         country: 'us',
         lang: 'en',
         num: 50,
@@ -485,7 +485,7 @@ describe('AppStoreScraperService', () => {
     it('should not include category when not specified', async () => {
       store.list.mockResolvedValue(mockListResults);
 
-      await service.list({ collection: 'top-free' });
+      await service.list({ collection: 'topfreeapplications' });
 
       const callArgs = store.list.mock.calls[0][0];
       expect(callArgs).not.toHaveProperty('category');

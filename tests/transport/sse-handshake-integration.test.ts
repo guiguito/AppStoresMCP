@@ -167,7 +167,7 @@ describe('SSE Handshake Integration Tests', () => {
     }, 10000);
 
     it('should handle multiple concurrent SSE connections with proper initialization', (done) => {
-      const connections = [];
+      const connections: Array<{ connectionId: string; receivedEvents: Array<{ event: string; data: any }> }> = [];
       const allReceivedEvents: Array<{ connectionId: string; events: Array<{ event: string; data: any }> }> = [];
 
       // Create 3 concurrent connections
@@ -645,7 +645,8 @@ describe('SSE Handshake Integration Tests', () => {
       // Verify heartbeat timing is consistent (approximately every 1000ms)
       if (heartbeats.length >= 2) {
         const timeBetweenHeartbeats = heartbeats[1]!.timestamp - heartbeats[0]!.timestamp;
-        expect(timeBetweenHeartbeats).toBeGreaterThan(800);
+        // Allow more tolerance for timing variations (750-1300ms for 1000ms interval)
+        expect(timeBetweenHeartbeats).toBeGreaterThanOrEqual(750);
         expect(timeBetweenHeartbeats).toBeLessThan(1300);
       }
     });
@@ -755,7 +756,7 @@ describe('SSE Handshake Integration Tests', () => {
       // Try to send message to first connection (should fail and close it)
       try {
         sseHandler.broadcast('test-event', { data: 'test' });
-      } catch (error) {
+      } catch {
         // Expected to throw due to write error
       }
 

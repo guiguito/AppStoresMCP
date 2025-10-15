@@ -30,6 +30,7 @@ describe('Transport Routing Integration Tests', () => {
         enableLogging: false
       },
       transport: {
+        https: { enabled: false },
         enableHttp: true,
         enableSSE: true,
         sse: {
@@ -39,6 +40,10 @@ describe('Transport Routing Integration Tests', () => {
           autoInitialize: true,
           initializationTimeout: 5000
         }
+      },
+      tools: {
+        enabledTools: new Set<string>(),
+        disabledTools: new Set<string>()
       }
     };
   });
@@ -51,6 +56,7 @@ describe('Transport Routing Integration Tests', () => {
       const config: ServerConfig = {
         ...baseConfig,
         transport: {
+          https: { enabled: false },
           enableHttp: true,
           enableSSE: false,
           sse: baseConfig.transport.sse
@@ -129,6 +135,7 @@ describe('Transport Routing Integration Tests', () => {
         transport: {
           enableHttp: false,
           enableSSE: true,
+          https: { enabled: false },
           sse: baseConfig.transport.sse
         }
       };
@@ -149,6 +156,7 @@ describe('Transport Routing Integration Tests', () => {
         transport: {
           enableHttp: true,
           enableSSE: true,
+          https: { enabled: false },
           sse: {
             heartbeatInterval: 15000,
             connectionTimeout: 120000,
@@ -356,6 +364,7 @@ describe('Transport Routing Integration Tests', () => {
       const invalidConfig: ServerConfig = {
         ...baseConfig,
         transport: {
+          https: { enabled: false },
           enableHttp: false,
           enableSSE: false,
           sse: baseConfig.transport.sse
@@ -373,9 +382,10 @@ describe('Transport Routing Integration Tests', () => {
         transport: {
           enableHttp: true,
           enableSSE: true,
+          https: { enabled: false },
           sse: {
             heartbeatInterval: 500, // Too small
-            connectionTimeout: 300000,
+            connectionTimeout: 60000,
             maxConnections: 100,
             autoInitialize: true,
             initializationTimeout: 5000
@@ -392,11 +402,12 @@ describe('Transport Routing Integration Tests', () => {
       const invalidConfig: ServerConfig = {
         ...baseConfig,
         transport: {
+          https: { enabled: false },
           enableHttp: true,
           enableSSE: true,
           sse: {
             heartbeatInterval: 30000,
-            connectionTimeout: 5000, // Too small
+            connectionTimeout: 10000, // Too small (less than heartbeat)
             maxConnections: 100,
             autoInitialize: true,
             initializationTimeout: 5000
@@ -405,7 +416,7 @@ describe('Transport Routing Integration Tests', () => {
       };
 
       expect(() => new MCPServer(invalidConfig)).toThrow(
-        'SSE connection timeout too small: 5000ms. Must be at least 10000ms.'
+        'SSE connection timeout must be greater than heartbeat interval'
       );
     });
 
@@ -413,6 +424,7 @@ describe('Transport Routing Integration Tests', () => {
       const invalidConfig: ServerConfig = {
         ...baseConfig,
         transport: {
+          https: { enabled: false },
           enableHttp: true,
           enableSSE: true,
           sse: {

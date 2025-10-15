@@ -3,10 +3,7 @@
  */
 
 import { GooglePlaySuggestTool } from '../../src/tools/google-play-suggest.tool';
-
-// Use manual mock from __mocks__/google-play-scraper.js
-jest.mock('google-play-scraper');
-const mockGooglePlayScraper = require('google-play-scraper');
+import { mockSuggest } from '../__mocks__/google-play-scraper-ts';
 
 describe('GooglePlaySuggestTool', () => {
   let tool: GooglePlaySuggestTool;
@@ -71,12 +68,12 @@ describe('GooglePlaySuggestTool', () => {
 
   describe('Parameter Validation', () => {
     it('should execute successfully with valid term only', async () => {
-      mockGooglePlayScraper.suggest.mockResolvedValue(mockRawSuggestResults);
+      mockSuggest.mockResolvedValue(mockRawSuggestResults);
 
       const result = await tool.execute({ term: 'test' });
 
       expect(result).toEqual(mockRawSuggestResults);
-      expect(mockGooglePlayScraper.suggest).toHaveBeenCalledWith({
+      expect(mockSuggest).toHaveBeenCalledWith({
         term: 'test',
         lang: 'en',
         country: 'us'
@@ -84,7 +81,7 @@ describe('GooglePlaySuggestTool', () => {
     });
 
     it('should execute successfully with all parameters', async () => {
-      mockGooglePlayScraper.suggest.mockResolvedValue(mockRawSuggestResults);
+      mockSuggest.mockResolvedValue(mockRawSuggestResults);
 
       const result = await tool.execute({
         term: 'productivity',
@@ -93,7 +90,7 @@ describe('GooglePlaySuggestTool', () => {
       });
 
       expect(result).toEqual(mockRawSuggestResults);
-      expect(mockGooglePlayScraper.suggest).toHaveBeenCalledWith({
+      expect(mockSuggest).toHaveBeenCalledWith({
         term: 'productivity',
         lang: 'es',
         country: 'mx'
@@ -173,11 +170,11 @@ describe('GooglePlaySuggestTool', () => {
 
   describe('Google Play Scraper Integration', () => {
     it('should call google-play-scraper with correct parameters', async () => {
-      mockGooglePlayScraper.suggest.mockResolvedValue(mockRawSuggestResults);
+      mockSuggest.mockResolvedValue(mockRawSuggestResults);
 
       await tool.execute({ term: 'test' });
 
-      expect(mockGooglePlayScraper.suggest).toHaveBeenCalledWith({
+      expect(mockSuggest).toHaveBeenCalledWith({
         term: 'test',
         lang: 'en',
         country: 'us'
@@ -185,7 +182,7 @@ describe('GooglePlaySuggestTool', () => {
     });
 
     it('should call google-play-scraper with all parameters', async () => {
-      mockGooglePlayScraper.suggest.mockResolvedValue(mockRawSuggestResults);
+      mockSuggest.mockResolvedValue(mockRawSuggestResults);
 
       await tool.execute({
         term: 'productivity',
@@ -193,7 +190,7 @@ describe('GooglePlaySuggestTool', () => {
         country: 'ca'
       });
 
-      expect(mockGooglePlayScraper.suggest).toHaveBeenCalledWith({
+      expect(mockSuggest).toHaveBeenCalledWith({
         term: 'productivity',
         lang: 'fr',
         country: 'ca'
@@ -202,7 +199,7 @@ describe('GooglePlaySuggestTool', () => {
 
     it('should handle google-play-scraper errors', async () => {
       const scraperError = new Error('Network error');
-      mockGooglePlayScraper.suggest.mockRejectedValue(scraperError);
+      mockSuggest.mockRejectedValue(scraperError);
 
       const result = await tool.execute({ term: 'test' });
 
@@ -214,7 +211,7 @@ describe('GooglePlaySuggestTool', () => {
 
     it('should handle unexpected errors', async () => {
       const unexpectedError = new Error('Unexpected error');
-      mockGooglePlayScraper.suggest.mockRejectedValue(unexpectedError);
+      mockSuggest.mockRejectedValue(unexpectedError);
 
       const result = await tool.execute({ term: 'test' });
 
@@ -227,7 +224,7 @@ describe('GooglePlaySuggestTool', () => {
 
   describe('Response Format', () => {
     it('should return raw google-play-scraper response', async () => {
-      mockGooglePlayScraper.suggest.mockResolvedValue(mockRawSuggestResults);
+      mockSuggest.mockResolvedValue(mockRawSuggestResults);
 
       const result = await tool.execute({ term: 'test' });
 
@@ -246,7 +243,7 @@ describe('GooglePlaySuggestTool', () => {
         { suggestion: 'test app game', metadata: { popularity: 100 } }
       ];
       
-      mockGooglePlayScraper.suggest.mockResolvedValue(extendedRawResponse);
+      mockSuggest.mockResolvedValue(extendedRawResponse);
 
       const result = await tool.execute({ term: 'test' });
 
@@ -269,7 +266,7 @@ describe('GooglePlaySuggestTool', () => {
 
   describe('Edge Cases', () => {
     it('should handle minimum valid term length', async () => {
-      mockGooglePlayScraper.suggest.mockResolvedValue(mockRawSuggestResults);
+      mockSuggest.mockResolvedValue(mockRawSuggestResults);
 
       const result = await tool.execute({ term: 'ab' });
 
@@ -277,7 +274,7 @@ describe('GooglePlaySuggestTool', () => {
     });
 
     it('should handle valid language codes', async () => {
-      mockGooglePlayScraper.suggest.mockResolvedValue(mockRawSuggestResults);
+      mockSuggest.mockResolvedValue(mockRawSuggestResults);
 
       const validLangCodes = ['en', 'es', 'fr', 'de', 'ja', 'ko'];
       
@@ -291,7 +288,7 @@ describe('GooglePlaySuggestTool', () => {
     });
 
     it('should handle valid country codes', async () => {
-      mockGooglePlayScraper.suggest.mockResolvedValue(mockRawSuggestResults);
+      mockSuggest.mockResolvedValue(mockRawSuggestResults);
 
       const validCountryCodes = ['us', 'mx', 'ca', 'gb', 'de', 'jp'];
       
@@ -306,7 +303,7 @@ describe('GooglePlaySuggestTool', () => {
 
     it('should handle empty suggestion results', async () => {
       const emptyResults: any[] = [];
-      mockGooglePlayScraper.suggest.mockResolvedValue(emptyResults);
+      mockSuggest.mockResolvedValue(emptyResults);
 
       const result = await tool.execute({ term: 'nonexistent' });
 
@@ -315,7 +312,7 @@ describe('GooglePlaySuggestTool', () => {
     });
 
     it('should handle terms with special characters', async () => {
-      mockGooglePlayScraper.suggest.mockResolvedValue(mockRawSuggestResults);
+      mockSuggest.mockResolvedValue(mockRawSuggestResults);
 
       const specialTerms = ['app & game', 'app-name', 'app.name', 'app_name'];
       
@@ -326,7 +323,7 @@ describe('GooglePlaySuggestTool', () => {
     });
 
     it('should handle unicode characters in terms', async () => {
-      mockGooglePlayScraper.suggest.mockResolvedValue(mockRawSuggestResults);
+      mockSuggest.mockResolvedValue(mockRawSuggestResults);
 
       const unicodeTerms = ['café', 'naïve', '测试', 'тест'];
       
@@ -337,7 +334,7 @@ describe('GooglePlaySuggestTool', () => {
     });
 
     it('should handle long terms', async () => {
-      mockGooglePlayScraper.suggest.mockResolvedValue(mockRawSuggestResults);
+      mockSuggest.mockResolvedValue(mockRawSuggestResults);
 
       const longTerm = 'a'.repeat(100);
       const result = await tool.execute({ term: longTerm });
@@ -346,7 +343,7 @@ describe('GooglePlaySuggestTool', () => {
     });
 
     it('should handle terms with numbers', async () => {
-      mockGooglePlayScraper.suggest.mockResolvedValue(mockRawSuggestResults);
+      mockSuggest.mockResolvedValue(mockRawSuggestResults);
 
       const numericTerms = ['app2', '2048', 'test123'];
       

@@ -2,18 +2,18 @@
  * Unit tests for Apple App Store App Reviews MCP Tool
  */
 
-// Mock app-store-scraper module before importing anything else
+// Mock app-store-scraper-ts module before importing anything else
 const mockAppStoreScraper = {
   app: jest.fn(),
   reviews: jest.fn(),
   search: jest.fn(),
   sort: {
-    RECENT: 'recent',
-    HELPFUL: 'helpful'
+    RECENT: 'mostRecent',
+    HELPFUL: 'mostHelpful'
   }
 };
 
-jest.mock('app-store-scraper', () => mockAppStoreScraper);
+jest.mock('app-store-scraper-ts', () => mockAppStoreScraper);
 
 import { AppStoreAppReviewsTool } from '../../src/tools/app-store-app-reviews.tool';
 
@@ -167,14 +167,14 @@ describe('AppStoreAppReviewsTool', () => {
       const result = await tool.execute({ 
         appId: '123456789', 
         page: 3, 
-        sort: 'helpfulness' 
+        sort: 'rating' 
       });
 
       expect(result).toHaveLength(2);
       expect(mockAppStoreScraper.reviews).toHaveBeenCalledWith({
         id: '123456789',
         page: 3,
-        sort: mockAppStoreScraper.sort.HELPFUL,
+        sort: 'mostHelpful',
         country: 'us'
       });
     });

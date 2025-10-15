@@ -9,7 +9,6 @@ import { ServerConfig } from '../../src/config/server-config';
 
 // Rate limiting configuration to avoid overwhelming app store APIs
 const RATE_LIMIT_DELAY = 2000; // 2 seconds between requests
-const MAX_CONCURRENT_TESTS = 1; // Run tests sequentially
 
 // Test data fixtures - real app IDs that should be stable
 const TEST_FIXTURES = {
@@ -27,7 +26,10 @@ const TEST_FIXTURES = {
   }
 };
 
-describe('MCP Tools Integration Tests', () => {
+// Skip real API tests if SKIP_EXTERNAL_API_TESTS is set
+const describeOrSkip = process.env.SKIP_EXTERNAL_API_TESTS === 'true' ? describe.skip : describe;
+
+describeOrSkip('MCP Tools Integration Tests', () => {
   let server: MCPServer;
   let testConfig: ServerConfig;
   let app: any;
@@ -51,12 +53,30 @@ describe('MCP Tools Integration Tests', () => {
       server: {
         requestTimeout: 30000,
         enableLogging: false
+      },
+      transport: {
+        enableHttp: true,
+        enableSSE: true,
+        https: {
+          enabled: false
+        },
+        sse: {
+          heartbeatInterval: 30000,
+          connectionTimeout: 60000,
+          maxConnections: 100,
+          autoInitialize: true,
+          initializationTimeout: 5000
+        }
+      },
+      tools: {
+        enabledTools: new Set<string>(),
+        disabledTools: new Set<string>()
       }
     };
 
     server = new MCPServer(testConfig);
     await server.start();
-    app = server.getHttpTransport().getApp();
+    app = server.getHttpTransport()!.getApp();
   }, 30000); // Longer timeout for server startup
 
   afterAll(async () => {
@@ -541,7 +561,7 @@ describe('MCP Tools Integration Tests', () => {
 
       // Verify each response has correct correlation ID
       responses.forEach((response, index) => {
-        expect(response.body.id).toBe(requests[index].id);
+        expect(response.body.id).toBe(requests[index]!.id);
       });
     }, 30000);
   });
@@ -603,8 +623,8 @@ describe('MCP Tools Integration Tests', () => {
             id: 17 + i,
             method: 'tools/call',
             params: {
-              name: req.tool,
-              arguments: req.args
+              name: req!.tool,
+              arguments: req!.args
             }
           });
 

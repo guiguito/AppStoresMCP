@@ -47,6 +47,24 @@ describe('MCP Server Integration Tests', () => {
       server: {
         requestTimeout: 30000,
         enableLogging: false // Disable logging for cleaner test output
+      },
+      transport: {
+        enableHttp: true,
+        enableSSE: true,
+        https: {
+          enabled: false
+        },
+        sse: {
+          heartbeatInterval: 30000,
+          connectionTimeout: 60000,
+          maxConnections: 100,
+          autoInitialize: true,
+          initializationTimeout: 5000
+        }
+      },
+      tools: {
+        enabledTools: new Set<string>(),
+        disabledTools: new Set<string>()
       }
     };
   });
@@ -95,8 +113,8 @@ describe('MCP Server Integration Tests', () => {
       const toolRegistry = server.getToolRegistry();
       const toolNames = toolRegistry.getToolNames();
       
-      // Verify all 13 tools are registered
-      expect(toolNames).toHaveLength(13);
+      // Verify all 19 tools are registered (10 Google Play + 9 App Store)
+      expect(toolNames).toHaveLength(19);
       expect(toolNames).toContain('google-play-app-details');
       expect(toolNames).toContain('google-play-app-reviews');
       expect(toolNames).toContain('google-play-search');
@@ -110,7 +128,7 @@ describe('MCP Server Integration Tests', () => {
     test('should provide tool discovery through MCP protocol', async () => {
       await server.start();
       
-      const app = server.getHttpTransport().getApp();
+      const app = server.getHttpTransport()!.getApp();
       
       const response = await request(app)
         .post('/mcp')
@@ -140,7 +158,7 @@ describe('MCP Server Integration Tests', () => {
         }
       });
       
-      expect(response.body.result.tools).toHaveLength(13);
+      expect(response.body.result.tools).toHaveLength(19); // 10 Google Play + 9 App Store tools
       
       await server.stop();
     });
@@ -150,7 +168,7 @@ describe('MCP Server Integration Tests', () => {
     test('should handle health check endpoint', async () => {
       await server.start();
       
-      const app = server.getHttpTransport().getApp();
+      const app = server.getHttpTransport()!.getApp();
       
       const response = await request(app)
         .get('/health')
@@ -168,7 +186,7 @@ describe('MCP Server Integration Tests', () => {
     test('should handle CORS preflight requests', async () => {
       await server.start();
       
-      const app = server.getHttpTransport().getApp();
+      const app = server.getHttpTransport()!.getApp();
       
       await request(app)
         .options('/mcp')
@@ -183,7 +201,7 @@ describe('MCP Server Integration Tests', () => {
     test('should return 404 for unknown routes', async () => {
       await server.start();
       
-      const app = server.getHttpTransport().getApp();
+      const app = server.getHttpTransport()!.getApp();
       
       const response = await request(app)
         .get('/unknown-route')
@@ -205,7 +223,7 @@ describe('MCP Server Integration Tests', () => {
     test('should handle invalid JSON requests', async () => {
       await server.start();
       
-      const app = server.getHttpTransport().getApp();
+      const app = server.getHttpTransport()!.getApp();
       
       const response = await request(app)
         .post('/mcp')
@@ -227,7 +245,7 @@ describe('MCP Server Integration Tests', () => {
     test('should handle invalid MCP requests', async () => {
       await server.start();
       
-      const app = server.getHttpTransport().getApp();
+      const app = server.getHttpTransport()!.getApp();
       
       const response = await request(app)
         .post('/mcp')
@@ -251,7 +269,7 @@ describe('MCP Server Integration Tests', () => {
     test('should handle unknown methods', async () => {
       await server.start();
       
-      const app = server.getHttpTransport().getApp();
+      const app = server.getHttpTransport()!.getApp();
       
       const response = await request(app)
         .post('/mcp')
@@ -277,7 +295,7 @@ describe('MCP Server Integration Tests', () => {
     test('should handle tool calls with missing parameters', async () => {
       await server.start();
       
-      const app = server.getHttpTransport().getApp();
+      const app = server.getHttpTransport()!.getApp();
       
       const response = await request(app)
         .post('/mcp')
@@ -307,7 +325,7 @@ describe('MCP Server Integration Tests', () => {
     test('should handle calls to non-existent tools', async () => {
       await server.start();
       
-      const app = server.getHttpTransport().getApp();
+      const app = server.getHttpTransport()!.getApp();
       
       const response = await request(app)
         .post('/mcp')
@@ -339,7 +357,7 @@ describe('MCP Server Integration Tests', () => {
     test('should execute Google Play app details tool with invalid parameters', async () => {
       await server.start();
       
-      const app = server.getHttpTransport().getApp();
+      const app = server.getHttpTransport()!.getApp();
       
       const response = await request(app)
         .post('/mcp')
@@ -371,7 +389,7 @@ describe('MCP Server Integration Tests', () => {
     test('should execute App Store search tool with invalid parameters', async () => {
       await server.start();
       
-      const app = server.getHttpTransport().getApp();
+      const app = server.getHttpTransport()!.getApp();
       
       const response = await request(app)
         .post('/mcp')
@@ -428,7 +446,7 @@ describe('MCP Server Integration Tests', () => {
       expect(healthStatus).toMatchObject({
         status: 'healthy',
         uptime: expect.any(Number),
-        tools: 13,
+        tools: 19, // 10 Google Play + 9 App Store tools
         config: expect.any(Object)
       });
       

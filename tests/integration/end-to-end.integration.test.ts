@@ -30,12 +30,30 @@ describe('End-to-End MCP Integration Tests', () => {
       server: {
         requestTimeout: 30000,
         enableLogging: false
+      },
+      transport: {
+        enableHttp: true,
+        enableSSE: true,
+        https: {
+          enabled: false
+        },
+        sse: {
+          heartbeatInterval: 30000,
+          connectionTimeout: 60000,
+          maxConnections: 100,
+          autoInitialize: true,
+          initializationTimeout: 5000
+        }
+      },
+      tools: {
+        enabledTools: new Set<string>(),
+        disabledTools: new Set<string>()
       }
     };
 
     server = new MCPServer(testConfig);
     await server.start();
-    app = server.getHttpTransport().getApp();
+    app = server.getHttpTransport()!.getApp();
   }, 30000);
 
   afterAll(async () => {
@@ -45,7 +63,10 @@ describe('End-to-End MCP Integration Tests', () => {
   }, 10000);
 
   describe('Complete MCP Protocol Flow', () => {
-    test('should handle complete tool discovery and execution flow', async () => {
+    // Skip this test if external API tests are disabled (calls real Google Play API)
+    const testOrSkip = process.env.SKIP_EXTERNAL_API_TESTS === 'true' ? test.skip : test;
+    
+    testOrSkip('should handle complete tool discovery and execution flow', async () => {
       // Step 1: Discover available tools
       const discoveryResponse = await request(app)
         .post('/mcp')
@@ -71,7 +92,7 @@ describe('End-to-End MCP Integration Tests', () => {
       });
 
       const tools = discoveryResponse.body.result.tools;
-      expect(tools).toHaveLength(6);
+      expect(tools).toHaveLength(19); // 10 Google Play + 9 App Store tools
 
       // Step 2: Get schema for a specific tool
       const googlePlayTool = tools.find((tool: any) => tool.name === 'google-play-search');
@@ -208,12 +229,13 @@ describe('End-to-End MCP Integration Tests', () => {
       // Verify all requests completed successfully
       responses.forEach((response, index) => {
         expect(response.status).toBe(200);
-        expect(response.body.id).toBe(requests[index].id);
-        expect(response.body.result.tools).toHaveLength(6);
+        expect(response.body.id).toBe(requests[index]!.id);
+        expect(response.body.result.tools).toHaveLength(19); // 10 Google Play + 9 App Store tools
       });
     });
 
-    test('should handle mixed successful and failed requests in sequence', async () => {
+    // Skip this test if external API tests are disabled (calls real Google Play API)
+    testOrSkip('should handle mixed successful and failed requests in sequence', async () => {
       const testSequence = [
         {
           id: 'seq-1',
@@ -360,12 +382,11 @@ describe('End-to-End MCP Integration Tests', () => {
         .get('/health')
         .expect(200);
 
+      // HTTP transport health endpoint only returns basic info
       expect(response.body).toMatchObject({
         status: 'healthy',
         timestamp: expect.any(String),
-        version: expect.any(String),
-        uptime: expect.any(Number),
-        tools: 6
+        version: expect.any(String)
       });
     });
 
@@ -442,7 +463,7 @@ describe('End-to-End MCP Integration Tests', () => {
       // Create a separate server instance for this test
       const shutdownTestServer = new MCPServer(testConfig);
       await shutdownTestServer.start();
-      const shutdownApp = shutdownTestServer.getHttpTransport().getApp();
+      const shutdownApp = shutdownTestServer.getHttpTransport()!.getApp();
 
       // Start a long-running request
       const longRunningRequest = request(shutdownApp)

@@ -3,10 +3,7 @@
  */
 
 import { GooglePlaySearchTool } from '../../src/tools/google-play-search.tool';
-
-// Use manual mock from __mocks__/google-play-scraper.js
-jest.mock('google-play-scraper');
-const mockGooglePlayScraper = require('google-play-scraper');
+import { mockSearch } from '../__mocks__/google-play-scraper-ts';
 
 describe('GooglePlaySearchTool', () => {
   let tool: GooglePlaySearchTool;
@@ -94,12 +91,12 @@ describe('GooglePlaySearchTool', () => {
 
   describe('Parameter Validation', () => {
     it('should execute successfully with valid query only', async () => {
-      mockGooglePlayScraper.search.mockResolvedValue(mockRawSearchResults);
+      mockSearch.mockResolvedValue(mockRawSearchResults);
 
       const result = await tool.execute({ query: 'test app' });
 
       expect(result).toEqual(mockRawSearchResults);
-      expect(mockGooglePlayScraper.search).toHaveBeenCalledWith({
+      expect(mockSearch).toHaveBeenCalledWith({
         term: 'test app',
         num: 50,
         lang: 'en',
@@ -109,7 +106,7 @@ describe('GooglePlaySearchTool', () => {
     });
 
     it('should execute successfully with all parameters', async () => {
-      mockGooglePlayScraper.search.mockResolvedValue(mockRawSearchResults);
+      mockSearch.mockResolvedValue(mockRawSearchResults);
 
       const result = await tool.execute({
         query: 'productivity',
@@ -120,7 +117,7 @@ describe('GooglePlaySearchTool', () => {
       });
 
       expect(result).toEqual(mockRawSearchResults);
-      expect(mockGooglePlayScraper.search).toHaveBeenCalledWith({
+      expect(mockSearch).toHaveBeenCalledWith({
         term: 'productivity',
         num: 25,
         lang: 'es',
@@ -246,11 +243,11 @@ describe('GooglePlaySearchTool', () => {
 
   describe('Google Play Scraper Integration', () => {
     it('should call google-play-scraper with correct parameters', async () => {
-      mockGooglePlayScraper.search.mockResolvedValue(mockRawSearchResults);
+      mockSearch.mockResolvedValue(mockRawSearchResults);
 
       await tool.execute({ query: 'test app' });
 
-      expect(mockGooglePlayScraper.search).toHaveBeenCalledWith({
+      expect(mockSearch).toHaveBeenCalledWith({
         term: 'test app',
         num: 50,
         lang: 'en',
@@ -260,7 +257,7 @@ describe('GooglePlaySearchTool', () => {
     });
 
     it('should call google-play-scraper with all parameters', async () => {
-      mockGooglePlayScraper.search.mockResolvedValue(mockRawSearchResults);
+      mockSearch.mockResolvedValue(mockRawSearchResults);
 
       await tool.execute({
         query: 'productivity',
@@ -270,7 +267,7 @@ describe('GooglePlaySearchTool', () => {
         fullDetail: true
       });
 
-      expect(mockGooglePlayScraper.search).toHaveBeenCalledWith({
+      expect(mockSearch).toHaveBeenCalledWith({
         term: 'productivity',
         num: 25,
         lang: 'fr',
@@ -281,7 +278,7 @@ describe('GooglePlaySearchTool', () => {
 
     it('should handle google-play-scraper errors', async () => {
       const scraperError = new Error('Network error');
-      mockGooglePlayScraper.search.mockRejectedValue(scraperError);
+      mockSearch.mockRejectedValue(scraperError);
 
       const result = await tool.execute({ query: 'test app' });
 
@@ -293,7 +290,7 @@ describe('GooglePlaySearchTool', () => {
 
     it('should handle unexpected errors', async () => {
       const unexpectedError = new Error('Unexpected error');
-      mockGooglePlayScraper.search.mockRejectedValue(unexpectedError);
+      mockSearch.mockRejectedValue(unexpectedError);
 
       const result = await tool.execute({ query: 'test app' });
 
@@ -306,7 +303,7 @@ describe('GooglePlaySearchTool', () => {
 
   describe('Response Format', () => {
     it('should return raw google-play-scraper response', async () => {
-      mockGooglePlayScraper.search.mockResolvedValue(mockRawSearchResults);
+      mockSearch.mockResolvedValue(mockRawSearchResults);
 
       const result = await tool.execute({ query: 'test app' });
 
@@ -328,7 +325,7 @@ describe('GooglePlaySearchTool', () => {
         }
       ];
       
-      mockGooglePlayScraper.search.mockResolvedValue(extendedRawResponse);
+      mockSearch.mockResolvedValue(extendedRawResponse);
 
       const result = await tool.execute({ query: 'test app' });
 
@@ -351,7 +348,7 @@ describe('GooglePlaySearchTool', () => {
 
   describe('Edge Cases', () => {
     it('should handle minimum valid query length', async () => {
-      mockGooglePlayScraper.search.mockResolvedValue(mockRawSearchResults);
+      mockSearch.mockResolvedValue(mockRawSearchResults);
 
       const result = await tool.execute({ query: 'ab' });
 
@@ -359,7 +356,7 @@ describe('GooglePlaySearchTool', () => {
     });
 
     it('should handle valid language codes', async () => {
-      mockGooglePlayScraper.search.mockResolvedValue(mockRawSearchResults);
+      mockSearch.mockResolvedValue(mockRawSearchResults);
 
       const validLangCodes = ['en', 'es', 'fr', 'de', 'ja', 'ko'];
       
@@ -373,7 +370,7 @@ describe('GooglePlaySearchTool', () => {
     });
 
     it('should handle valid country codes', async () => {
-      mockGooglePlayScraper.search.mockResolvedValue(mockRawSearchResults);
+      mockSearch.mockResolvedValue(mockRawSearchResults);
 
       const validCountryCodes = ['us', 'mx', 'ca', 'gb', 'de', 'jp'];
       
@@ -387,7 +384,7 @@ describe('GooglePlaySearchTool', () => {
     });
 
     it('should handle boundary values for num parameter', async () => {
-      mockGooglePlayScraper.search.mockResolvedValue(mockRawSearchResults);
+      mockSearch.mockResolvedValue(mockRawSearchResults);
 
       // Test minimum value
       const result1 = await tool.execute({
@@ -405,7 +402,7 @@ describe('GooglePlaySearchTool', () => {
     });
 
     it('should handle boolean fullDetail values', async () => {
-      mockGooglePlayScraper.search.mockResolvedValue(mockRawSearchResults);
+      mockSearch.mockResolvedValue(mockRawSearchResults);
 
       // Test true
       const result1 = await tool.execute({
@@ -424,7 +421,7 @@ describe('GooglePlaySearchTool', () => {
 
     it('should handle empty search results', async () => {
       const emptyResults: any[] = [];
-      mockGooglePlayScraper.search.mockResolvedValue(emptyResults);
+      mockSearch.mockResolvedValue(emptyResults);
 
       const result = await tool.execute({ query: 'nonexistent app' });
 
@@ -433,7 +430,7 @@ describe('GooglePlaySearchTool', () => {
     });
 
     it('should handle queries with special characters', async () => {
-      mockGooglePlayScraper.search.mockResolvedValue(mockRawSearchResults);
+      mockSearch.mockResolvedValue(mockRawSearchResults);
 
       const specialQueries = ['app & game', 'app-name', 'app.name', 'app_name'];
       

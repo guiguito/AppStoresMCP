@@ -1,9 +1,9 @@
 /**
  * Google Play Store scraper service wrapper
- * Wraps google-play-scraper library with standardized interfaces and error handling
+ * Wraps google-play-scraper-ts library with standardized interfaces and error handling
  */
 
-const gplay = require('google-play-scraper').default || require('google-play-scraper');
+import gplay from 'google-play-scraper-ts';
 import { AppDetails, Review, SearchResult, ReviewsOptions, SearchOptions, AppDetailsOptions } from '../types/app-store';
 
 /**

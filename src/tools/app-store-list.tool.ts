@@ -99,21 +99,21 @@ export class AppStoreListTool implements MCPTool {
   };
 
   constructor() {
-    // No dependencies needed - calling app-store-scraper directly
+    // No dependencies needed - calling app-store-scraper-ts directly
   }
 
   /**
-   * Execute the Apple App Store list tool
+   * Execute the list tool
    */
-  async execute(params: AppStoreListParams = {}): Promise<any> {
+  async execute(params: AppStoreListParams): Promise<any> {
     // Validate input parameters
     this.validateParams(params);
 
-    // Fetch raw list data directly from app-store-scraper
-    const store = require('app-store-scraper');
+    // Fetch raw list data directly from app-store-scraper-ts
+    const store = await import('app-store-scraper-ts');
     
     const listParams: any = {
-      collection: params.collection || store.collection.TOP_FREE_IOS,
+      collection: params.collection || store.constants.collection.TOP_FREE_IOS,
       country: params.country || 'us',
       lang: params.lang || 'en',
       num: params.num ? Math.min(params.num, 100) : 50,
@@ -123,8 +123,8 @@ export class AppStoreListTool implements MCPTool {
     // Add category if specified
     if (params.category) {
       // Handle both string constants and numeric IDs
-      if (typeof params.category === 'string' && store.category[params.category] !== undefined) {
-        listParams.category = store.category[params.category];
+      if (typeof params.category === 'string' && (store.constants.category as any)[params.category] !== undefined) {
+        listParams.category = (store.constants.category as any)[params.category];
       } else {
         listParams.category = params.category;
       }

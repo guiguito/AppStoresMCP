@@ -798,7 +798,7 @@ export class SSETransportHandler {
         }
 
         await this.processMCPRequest(connectionId, queuedRequest);
-      } catch (error) {
+      } catch (_error) {
         if (this.config.enableLogging) {
           console.error(JSON.stringify({
             timestamp: new Date().toISOString(),
@@ -808,8 +808,8 @@ export class SSETransportHandler {
             correlationId: connection.correlationId,
             requestId: queuedRequest.id,
             method: queuedRequest.method,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : undefined
+            error: _error instanceof Error ? _error.message : 'Unknown error',
+            stack: _error instanceof Error ? _error.stack : undefined
           }));
         }
 
@@ -900,7 +900,7 @@ export class SSETransportHandler {
       if (!connection.response.destroyed) {
         connection.response.end();
       }
-    } catch (error) {
+    } catch {
       // Ignore errors when closing response
     }
 

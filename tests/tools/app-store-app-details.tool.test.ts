@@ -8,12 +8,12 @@ const mockAppStoreScraper = {
   reviews: jest.fn(),
   search: jest.fn(),
   sort: {
-    RECENT: 'recent',
-    HELPFUL: 'helpful'
+    RECENT: 'mostRecent',
+    HELPFUL: 'mostHelpful'
   }
 };
 
-jest.mock('app-store-scraper', () => mockAppStoreScraper);
+jest.mock('app-store-scraper-ts', () => mockAppStoreScraper);
 
 import { AppStoreAppDetailsTool } from '../../src/tools/app-store-app-details.tool';
 

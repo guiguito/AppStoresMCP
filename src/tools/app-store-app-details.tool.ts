@@ -41,7 +41,7 @@ export class AppStoreAppDetailsTool implements MCPTool {
   };
 
   constructor() {
-    // No longer using scraper service - calling app-store-scraper directly
+    // No longer using scraper service - calling app-store-scraper-ts directly
   }
 
   /**
@@ -51,14 +51,15 @@ export class AppStoreAppDetailsTool implements MCPTool {
     // Validate input parameters
     this.validateParams(params);
 
-    // Fetch raw app details directly from app-store-scraper
-    const store = require('app-store-scraper');
+    // Fetch raw app details directly from app-store-scraper-ts
+    const store = await import('app-store-scraper-ts');
     
     const rawAppDetails = await store.app({
       id: params.appId,
       country: params.country || 'us'
     });
 
+    // Return complete raw response from app-store-scraper-ts
     // Return complete raw response from app-store-scraper
     return rawAppDetails;
   }

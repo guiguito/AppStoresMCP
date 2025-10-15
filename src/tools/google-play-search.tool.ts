@@ -6,8 +6,7 @@
 import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
 
-// Use require for CommonJS compatibility with Jest mocking
-const gplay = require('google-play-scraper');
+import gplay from 'google-play-scraper-ts';
 
 /**
  * Input parameters for Google Play search tool

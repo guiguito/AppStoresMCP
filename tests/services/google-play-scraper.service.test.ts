@@ -5,10 +5,20 @@
 
 import { GooglePlayScraperService, GooglePlayScraperError } from '../../src/services/google-play-scraper.service';
 
-// Use manual mock from __mocks__/google-play-scraper.js
-jest.mock('google-play-scraper');
-
-const gplay = require('google-play-scraper');
+// Use manual mock from __mocks__/google-play-scraper-ts
+jest.mock('google-play-scraper-ts', () => ({
+  __esModule: true,
+  default: {
+    app: jest.fn(),
+    reviews: jest.fn(),
+    search: jest.fn(),
+    collection: { TOP_FREE: 'TOP_FREE', TOP_PAID: 'TOP_PAID', GROSSING: 'GROSSING' },
+    sort: { NEWEST: 2, RATING: 3, HELPFULNESS: 1 },
+    category: {},
+    age: {}
+  }
+}));
+const gplay = require('google-play-scraper-ts').default;
 
 describe('GooglePlayScraperService', () => {
   let service: GooglePlayScraperService;
@@ -176,7 +186,7 @@ describe('GooglePlayScraperService', () => {
       expect(gplay.reviews).toHaveBeenCalledWith({
         appId: 'com.example.app',
         num: 100,
-        sort: 1 // NEWEST
+        sort: 2 // NEWEST
       });
 
       expect(result).toHaveLength(2);
@@ -214,7 +224,7 @@ describe('GooglePlayScraperService', () => {
         paginate: true,
         nextPaginationToken: 'page_1',
         num: 50,
-        sort: 2 // RATING
+        sort: 3 // RATING
       });
     });
 
@@ -226,7 +236,7 @@ describe('GooglePlayScraperService', () => {
       expect(gplay.reviews).toHaveBeenCalledWith({
         appId: 'com.example.app',
         num: 150, // Limited to 150
-        sort: 1
+        sort: 2 // NEWEST
       });
     });
 

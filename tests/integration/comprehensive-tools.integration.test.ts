@@ -32,7 +32,10 @@ const TEST_FIXTURES = {
   }
 };
 
-describe('Comprehensive MCP Tools Integration Tests', () => {
+// Skip real API tests if SKIP_EXTERNAL_API_TESTS is set
+const describeOrSkip = process.env.SKIP_EXTERNAL_API_TESTS === 'true' ? describe.skip : describe;
+
+describeOrSkip('Comprehensive MCP Tools Integration Tests', () => {
   let server: MCPServer;
   let testConfig: ServerConfig;
   let app: any;
@@ -60,11 +63,20 @@ describe('Comprehensive MCP Tools Integration Tests', () => {
       transport: {
         enableHttp: true,
         enableSSE: true,
+        https: {
+          enabled: false
+        },
         sse: {
-          heartbeatInterval: 5000,
-          connectionTimeout: 30000,
-          maxConnections: 10
+          heartbeatInterval: 30000,
+          connectionTimeout: 60000,
+          maxConnections: 100,
+          autoInitialize: true,
+          initializationTimeout: 5000
         }
+      },
+      tools: {
+        enabledTools: new Set<string>(),
+        disabledTools: new Set<string>()
       }
     };
 
@@ -260,7 +272,7 @@ describe('Comprehensive MCP Tools Integration Tests', () => {
       // Verify all requests completed successfully
       responses.forEach((response, index) => {
         expect(response.status).toBe(200);
-        expect(response.body.id).toBe(concurrentRequests[index].id);
+        expect(response.body.id).toBe(concurrentRequests[index]!.id);
         expect(response.body.result).toBeDefined();
       });
     }, LONG_TIMEOUT);
@@ -324,8 +336,8 @@ describe('Comprehensive MCP Tools Integration Tests', () => {
             id: `invalid-${i}`,
             method: 'tools/call',
             params: {
-              name: req.tool,
-              arguments: req.args
+              name: req!.tool,
+              arguments: req!.args
             }
           });
 

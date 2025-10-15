@@ -3,10 +3,7 @@
  */
 
 import { GooglePlayAppReviewsTool } from '../../src/tools/google-play-app-reviews.tool';
-
-// Use manual mock from __mocks__/google-play-scraper.js
-jest.mock('google-play-scraper');
-const mockGooglePlayScraper = require('google-play-scraper');
+import { mockReviews } from '../__mocks__/google-play-scraper-ts';
 
 describe('GooglePlayAppReviewsTool', () => {
   let tool: GooglePlayAppReviewsTool;
@@ -84,7 +81,7 @@ describe('GooglePlayAppReviewsTool', () => {
 
   describe('Parameter Validation', () => {
     it('should execute successfully with valid appId only', async () => {
-      mockGooglePlayScraper.reviews.mockResolvedValue(mockRawReviews);
+      mockReviews.mockResolvedValue(mockRawReviews);
 
       const result = await tool.execute({ appId: 'com.example.testapp' });
 
@@ -101,10 +98,10 @@ describe('GooglePlayAppReviewsTool', () => {
       expect(result.data[0].title).toBeUndefined();
       expect(result.data[0].thumbsUp).toBeUndefined();
       
-      expect(mockGooglePlayScraper.reviews).toHaveBeenCalledWith({
+      expect(mockReviews).toHaveBeenCalledWith({
         appId: 'com.example.testapp',
         num: 100,
-        sort: mockGooglePlayScraper.sort.NEWEST,
+        sort: 2, // NEWEST
         lang: 'en',
         country: 'us',
         paginate: true
@@ -112,7 +109,7 @@ describe('GooglePlayAppReviewsTool', () => {
     });
 
     it('should execute successfully with all parameters', async () => {
-      mockGooglePlayScraper.reviews.mockResolvedValue(mockRawReviews);
+      mockReviews.mockResolvedValue(mockRawReviews);
 
       const result = await tool.execute({
         appId: 'com.example.testapp',
@@ -125,10 +122,10 @@ describe('GooglePlayAppReviewsTool', () => {
       expect(result.data).toHaveLength(2);
       expect(result.data[0].title).toBeUndefined(); // Should be filtered out
       
-      expect(mockGooglePlayScraper.reviews).toHaveBeenCalledWith({
+      expect(mockReviews).toHaveBeenCalledWith({
         appId: 'com.example.testapp',
         num: 50,
-        sort: mockGooglePlayScraper.sort.RATING,
+        sort: 3, // RATING
         nextPaginationToken: 'CsEBIrgBAcgILLS5IDBgvTCYG4Xnpm31aqIVGkbk0JJ',
         lang: 'en',
         country: 'us',
@@ -249,7 +246,7 @@ describe('GooglePlayAppReviewsTool', () => {
     });
 
     it('should accept valid lang and country parameters', async () => {
-      mockGooglePlayScraper.reviews.mockResolvedValue(mockRawReviews);
+      mockReviews.mockResolvedValue(mockRawReviews);
 
       const result = await tool.execute({
         appId: 'com.example.testapp',
@@ -261,10 +258,10 @@ describe('GooglePlayAppReviewsTool', () => {
       expect(result.data).toHaveLength(2);
       expect(result.data[0].title).toBeUndefined(); // Should be filtered out
       
-      expect(mockGooglePlayScraper.reviews).toHaveBeenCalledWith({
+      expect(mockReviews).toHaveBeenCalledWith({
         appId: 'com.example.testapp',
         num: 100,
-        sort: mockGooglePlayScraper.sort.NEWEST,
+        sort: 2, // NEWEST
         lang: 'fr',
         country: 'ca',
         paginate: true
@@ -274,14 +271,14 @@ describe('GooglePlayAppReviewsTool', () => {
 
   describe('Google Play Scraper Integration', () => {
     it('should call google-play-scraper with correct parameters', async () => {
-      mockGooglePlayScraper.reviews.mockResolvedValue(mockRawReviews);
+      mockReviews.mockResolvedValue(mockRawReviews);
 
       await tool.execute({ appId: 'com.example.testapp' });
 
-      expect(mockGooglePlayScraper.reviews).toHaveBeenCalledWith({
+      expect(mockReviews).toHaveBeenCalledWith({
         appId: 'com.example.testapp',
         num: 100,
-        sort: mockGooglePlayScraper.sort.NEWEST,
+        sort: 2, // NEWEST
         lang: 'en',
         country: 'us',
         paginate: true
@@ -289,7 +286,7 @@ describe('GooglePlayAppReviewsTool', () => {
     });
 
     it('should call google-play-scraper with all parameters', async () => {
-      mockGooglePlayScraper.reviews.mockResolvedValue(mockRawReviews);
+      mockReviews.mockResolvedValue(mockRawReviews);
 
       await tool.execute({
         appId: 'com.example.testapp',
@@ -298,10 +295,10 @@ describe('GooglePlayAppReviewsTool', () => {
         sort: 'helpfulness'
       });
 
-      expect(mockGooglePlayScraper.reviews).toHaveBeenCalledWith({
+      expect(mockReviews).toHaveBeenCalledWith({
         appId: 'com.example.testapp',
         num: 50,
-        sort: mockGooglePlayScraper.sort.HELPFULNESS,
+        sort: 1, // HELPFULNESS
         nextPaginationToken: 'CsEBIrgBAcgILLS5IDBgvTCYG4Xnpm31aqIVGkbk0JJ',
         lang: 'en',
         country: 'us',
@@ -310,15 +307,15 @@ describe('GooglePlayAppReviewsTool', () => {
     });
 
     it('should return full details when fullDetail is true', async () => {
-      mockGooglePlayScraper.reviews.mockResolvedValue(mockRawReviews);
+      mockReviews.mockResolvedValue(mockRawReviews);
 
       const result = await tool.execute({ appId: 'com.example.testapp', fullDetail: true });
 
       expect(result).toEqual(mockRawReviews);
-      expect(mockGooglePlayScraper.reviews).toHaveBeenCalledWith({
+      expect(mockReviews).toHaveBeenCalledWith({
         appId: 'com.example.testapp',
         num: 100,
-        sort: mockGooglePlayScraper.sort.NEWEST,
+        sort: 2, // NEWEST
         lang: 'en',
         country: 'us',
         paginate: true
@@ -343,7 +340,7 @@ describe('GooglePlayAppReviewsTool', () => {
         ],
         nextPaginationToken: 'next_page_token'
       };
-      mockGooglePlayScraper.reviews.mockResolvedValue(mockRawReviewsWithExtraFields);
+      mockReviews.mockResolvedValue(mockRawReviewsWithExtraFields);
 
       const result = await tool.execute({ appId: 'com.example.testapp', fullDetail: false });
 
@@ -371,7 +368,7 @@ describe('GooglePlayAppReviewsTool', () => {
 
     it('should handle google-play-scraper errors', async () => {
       const scraperError = new Error('Network error');
-      mockGooglePlayScraper.reviews.mockRejectedValue(scraperError);
+      mockReviews.mockRejectedValue(scraperError);
 
       const result = await tool.execute({ appId: 'com.example.testapp' });
 
@@ -383,7 +380,7 @@ describe('GooglePlayAppReviewsTool', () => {
 
     it('should handle app not found errors', async () => {
       const notFoundError = new Error('App not found');
-      mockGooglePlayScraper.reviews.mockRejectedValue(notFoundError);
+      mockReviews.mockRejectedValue(notFoundError);
 
       const result = await tool.execute({ appId: 'com.nonexistent.app' });
 
@@ -395,7 +392,7 @@ describe('GooglePlayAppReviewsTool', () => {
 
     it('should handle unexpected errors', async () => {
       const unexpectedError = new Error('Unexpected error');
-      mockGooglePlayScraper.reviews.mockRejectedValue(unexpectedError);
+      mockReviews.mockRejectedValue(unexpectedError);
 
       const result = await tool.execute({ appId: 'com.example.testapp' });
 
@@ -408,7 +405,7 @@ describe('GooglePlayAppReviewsTool', () => {
 
   describe('Response Format', () => {
     it('should return raw google-play-scraper response when fullDetail is true', async () => {
-      mockGooglePlayScraper.reviews.mockResolvedValue(mockRawReviews);
+      mockReviews.mockResolvedValue(mockRawReviews);
 
       const result = await tool.execute({ appId: 'com.example.testapp', fullDetail: true });
 
@@ -429,7 +426,7 @@ describe('GooglePlayAppReviewsTool', () => {
         metadata: { key: 'value' }
       };
       
-      mockGooglePlayScraper.reviews.mockResolvedValue(extendedRawResponse);
+      mockReviews.mockResolvedValue(extendedRawResponse);
 
       const result = await tool.execute({ appId: 'com.example.testapp', fullDetail: true });
 
@@ -468,7 +465,7 @@ describe('GooglePlayAppReviewsTool', () => {
     });
 
     it('should handle valid sort options', async () => {
-      mockGooglePlayScraper.reviews.mockResolvedValue(mockRawReviews);
+      mockReviews.mockResolvedValue(mockRawReviews);
 
       const validSortOptions = ['newest', 'rating', 'helpfulness'];
       
@@ -484,7 +481,7 @@ describe('GooglePlayAppReviewsTool', () => {
     });
 
     it('should handle boundary values for num parameter', async () => {
-      mockGooglePlayScraper.reviews.mockResolvedValue(mockRawReviews);
+      mockReviews.mockResolvedValue(mockRawReviews);
 
       // Test minimum value
       const result1 = await tool.execute({
@@ -506,7 +503,7 @@ describe('GooglePlayAppReviewsTool', () => {
     });
 
     it('should handle nextPaginationToken parameter', async () => {
-      mockGooglePlayScraper.reviews.mockResolvedValue(mockRawReviews);
+      mockReviews.mockResolvedValue(mockRawReviews);
 
       const result = await tool.execute({
         appId: 'com.example.testapp',
@@ -517,10 +514,10 @@ describe('GooglePlayAppReviewsTool', () => {
       expect(result.data).toHaveLength(2);
       expect(result.data[0].title).toBeUndefined(); // Should be filtered out
       
-      expect(mockGooglePlayScraper.reviews).toHaveBeenCalledWith({
+      expect(mockReviews).toHaveBeenCalledWith({
         appId: 'com.example.testapp',
         num: 100,
-        sort: mockGooglePlayScraper.sort.NEWEST,
+        sort: 2, // NEWEST
         nextPaginationToken: 'CsEBIrgBAcgILLS5IDBgvTCYG4Xnpm31aqIVGkbk0JJ',
         lang: 'en',
         country: 'us',
@@ -530,7 +527,7 @@ describe('GooglePlayAppReviewsTool', () => {
 
     it('should handle empty reviews response', async () => {
       const emptyRawReviews = { data: [], nextPaginationToken: null };
-      mockGooglePlayScraper.reviews.mockResolvedValue(emptyRawReviews);
+      mockReviews.mockResolvedValue(emptyRawReviews);
 
       const result = await tool.execute({ appId: 'com.example.testapp' });
 

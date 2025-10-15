@@ -70,16 +70,19 @@ export class MCPServer {
       throw new Error('HTTP transport must be enabled. SSE transport requires HTTP transport to serve endpoints.');
     }
 
-    if (config.transport.sse.heartbeatInterval < 1000) {
-      throw new Error(`SSE heartbeat interval too small: ${config.transport.sse.heartbeatInterval}ms. Must be at least 1000ms.`);
-    }
+    // Validate SSE configuration only if SSE transport is enabled
+    if (config.transport.enableSSE) {
+      if (config.transport.sse.heartbeatInterval < 1000) {
+        throw new Error(`SSE heartbeat interval too small: ${config.transport.sse.heartbeatInterval}ms. Must be at least 1000ms.`);
+      }
 
-    if (config.transport.sse.connectionTimeout < 10000) {
-      throw new Error(`SSE connection timeout too small: ${config.transport.sse.connectionTimeout}ms. Must be at least 10000ms.`);
-    }
+      if (config.transport.sse.connectionTimeout <= config.transport.sse.heartbeatInterval) {
+        throw new Error(`SSE connection timeout must be greater than heartbeat interval`);
+      }
 
-    if (config.transport.sse.maxConnections < 1) {
-      throw new Error(`SSE max connections too small: ${config.transport.sse.maxConnections}. Must be at least 1.`);
+      if (config.transport.sse.maxConnections < 1) {
+        throw new Error(`SSE max connections too small: ${config.transport.sse.maxConnections}. Must be at least 1.`);
+      }
     }
   }
 

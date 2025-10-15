@@ -4,9 +4,9 @@
 
 import { AppStoreListTool } from '../../src/tools/app-store-list.tool';
 
-// Use manual mock from __mocks__/app-store-scraper.js
-jest.mock('app-store-scraper');
-const mockStore = require('app-store-scraper');
+// Use manual mock from __mocks__/app-store-scraper-ts.ts
+jest.mock('app-store-scraper-ts');
+const mockStore = jest.requireMock('app-store-scraper-ts');
 
 describe('AppStoreListTool', () => {
   let tool: AppStoreListTool;
@@ -114,7 +114,7 @@ describe('AppStoreListTool', () => {
       const result = await tool.execute({});
 
       expect(mockStore.list).toHaveBeenCalledWith({
-        collection: 'top-free',
+        collection: 'topfreeapplications',
         country: 'us',
         lang: 'en',
         num: 50,

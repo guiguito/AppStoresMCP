@@ -3,10 +3,7 @@
  */
 
 import { GooglePlayDeveloperTool } from '../../src/tools/google-play-developer.tool';
-
-// Use manual mock from __mocks__/google-play-scraper.js
-jest.mock('google-play-scraper');
-const mockGplay = require('google-play-scraper');
+import { mockDeveloper } from '../__mocks__/google-play-scraper-ts';
 
 describe('GooglePlayDeveloperTool', () => {
   let tool: GooglePlayDeveloperTool;
@@ -49,7 +46,7 @@ describe('GooglePlayDeveloperTool', () => {
         { appId: 'com.example.app1', title: 'Test App 1', developer: 'Test Developer' },
         { appId: 'com.example.app2', title: 'Test App 2', developer: 'Test Developer' }
       ];
-      mockGplay.developer.mockResolvedValue(mockDeveloperData);
+      mockDeveloper.mockResolvedValue(mockDeveloperData);
 
       const result = await tool.execute({
         devId: 'Test Developer',
@@ -60,7 +57,7 @@ describe('GooglePlayDeveloperTool', () => {
       });
 
       expect(result).toEqual(mockDeveloperData);
-      expect(mockGplay.developer).toHaveBeenCalledWith({
+      expect(mockDeveloper).toHaveBeenCalledWith({
         devId: 'Test Developer',
         num: 10,
         lang: 'en',
@@ -71,12 +68,12 @@ describe('GooglePlayDeveloperTool', () => {
 
     it('should use default values for optional parameters', async () => {
       const mockDeveloperData = [{ appId: 'com.example.app', title: 'Test App', developer: 'Test Dev' }];
-      mockGplay.developer.mockResolvedValue(mockDeveloperData);
+      mockDeveloper.mockResolvedValue(mockDeveloperData);
 
       const result = await tool.execute({ devId: 'Test Dev' });
 
       expect(result).toEqual(mockDeveloperData);
-      expect(mockGplay.developer).toHaveBeenCalledWith({
+      expect(mockDeveloper).toHaveBeenCalledWith({
         devId: 'Test Dev',
         num: 50,
         lang: 'en',
@@ -153,11 +150,11 @@ describe('GooglePlayDeveloperTool', () => {
   describe('Developer ID Handling', () => {
     it('should handle developer ID with spaces', async () => {
       const mockDeveloperData = [{ appId: 'com.example.app', title: 'Test App' }];
-      mockGplay.developer.mockResolvedValue(mockDeveloperData);
+      mockDeveloper.mockResolvedValue(mockDeveloperData);
 
       await tool.execute({ devId: 'Google LLC' });
 
-      expect(mockGplay.developer).toHaveBeenCalledWith({
+      expect(mockDeveloper).toHaveBeenCalledWith({
         devId: 'Google LLC',
         num: 50,
         lang: 'en',
@@ -168,11 +165,11 @@ describe('GooglePlayDeveloperTool', () => {
 
     it('should handle developer ID with special characters', async () => {
       const mockDeveloperData = [{ appId: 'com.example.app', title: 'Test App' }];
-      mockGplay.developer.mockResolvedValue(mockDeveloperData);
+      mockDeveloper.mockResolvedValue(mockDeveloperData);
 
       await tool.execute({ devId: 'Test & Co.' });
 
-      expect(mockGplay.developer).toHaveBeenCalledWith({
+      expect(mockDeveloper).toHaveBeenCalledWith({
         devId: 'Test & Co.',
         num: 50,
         lang: 'en',
@@ -183,11 +180,11 @@ describe('GooglePlayDeveloperTool', () => {
 
     it('should trim whitespace from devId', async () => {
       const mockDeveloperData = [{ appId: 'com.example.app', title: 'Test App' }];
-      mockGplay.developer.mockResolvedValue(mockDeveloperData);
+      mockDeveloper.mockResolvedValue(mockDeveloperData);
 
       await tool.execute({ devId: '  Test Developer  ' });
 
-      expect(mockGplay.developer).toHaveBeenCalledWith({
+      expect(mockDeveloper).toHaveBeenCalledWith({
         devId: '  Test Developer  ',
         num: 50,
         lang: 'en',
@@ -200,7 +197,7 @@ describe('GooglePlayDeveloperTool', () => {
   describe('Error Handling', () => {
     it('should handle google-play-scraper errors', async () => {
       const error = new Error('Network error');
-      mockGplay.developer.mockRejectedValue(error);
+      mockDeveloper.mockRejectedValue(error);
 
       const result = await tool.execute({ devId: 'Test Developer' });
 
@@ -256,7 +253,7 @@ describe('GooglePlayDeveloperTool', () => {
         }
       };
 
-      mockGplay.developer.mockResolvedValue(mockRawData);
+      mockDeveloper.mockResolvedValue(mockRawData);
 
       const result = await tool.execute({ devId: 'Test Developer' });
 
@@ -311,7 +308,7 @@ describe('GooglePlayDeveloperTool', () => {
         }
       ];
 
-      mockGplay.developer.mockResolvedValue(mockRawData);
+      mockDeveloper.mockResolvedValue(mockRawData);
 
       const result = await tool.execute({ devId: 'Test Developer' });
 
@@ -326,11 +323,11 @@ describe('GooglePlayDeveloperTool', () => {
   describe('Localization Support', () => {
     it('should handle different language codes', async () => {
       const mockDeveloperData = [{ appId: 'com.example.app', title: 'Test App' }];
-      mockGplay.developer.mockResolvedValue(mockDeveloperData);
+      mockDeveloper.mockResolvedValue(mockDeveloperData);
 
       await tool.execute({ devId: 'Test Developer', lang: 'es' });
 
-      expect(mockGplay.developer).toHaveBeenCalledWith({
+      expect(mockDeveloper).toHaveBeenCalledWith({
         devId: 'Test Developer',
         num: 50,
         lang: 'es',
@@ -341,11 +338,11 @@ describe('GooglePlayDeveloperTool', () => {
 
     it('should handle different country codes', async () => {
       const mockDeveloperData = [{ appId: 'com.example.app', title: 'Test App' }];
-      mockGplay.developer.mockResolvedValue(mockDeveloperData);
+      mockDeveloper.mockResolvedValue(mockDeveloperData);
 
       await tool.execute({ devId: 'Test Developer', country: 'gb' });
 
-      expect(mockGplay.developer).toHaveBeenCalledWith({
+      expect(mockDeveloper).toHaveBeenCalledWith({
         devId: 'Test Developer',
         num: 50,
         lang: 'en',
@@ -358,11 +355,11 @@ describe('GooglePlayDeveloperTool', () => {
   describe('Full Detail Support', () => {
     it('should handle fullDetail parameter', async () => {
       const mockDeveloperData = [{ appId: 'com.example.app', title: 'Test App' }];
-      mockGplay.developer.mockResolvedValue(mockDeveloperData);
+      mockDeveloper.mockResolvedValue(mockDeveloperData);
 
       await tool.execute({ devId: 'Test Developer', fullDetail: true });
 
-      expect(mockGplay.developer).toHaveBeenCalledWith({
+      expect(mockDeveloper).toHaveBeenCalledWith({
         devId: 'Test Developer',
         num: 50,
         lang: 'en',

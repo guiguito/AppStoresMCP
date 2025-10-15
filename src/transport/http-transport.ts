@@ -266,8 +266,8 @@ export class HTTPTransportHandler {
       this.handleMCPRequest(mcpReq, res);
     });
 
-    // Set up 404 and error handlers (will be called again if SSE routes are added, but that's safe)
-    this.setupFinalHandlers();
+    // Note: Final handlers (404 and error handlers) are set up later
+    // after SSE routes are registered (if enabled) or when finalizeRoutes() is called
   }
 
   /**
@@ -427,7 +427,7 @@ export class HTTPTransportHandler {
   /**
    * Global error handler middleware
    */
-  private errorHandler: ErrorRequestHandler = (error: Error, req: Request, res: Response, _next: NextFunction): void => {
+  private errorHandler: ErrorRequestHandler = (error: Error, req: Request, res: Response): void => {
     const mcpReq = req as MCPHttpRequest;
     console.error(JSON.stringify({
       timestamp: new Date().toISOString(),
@@ -460,6 +460,7 @@ export class HTTPTransportHandler {
   public setSSEHandler(sseHandler: any): void {
     this.sseHandler = sseHandler;
     this.setupSSERoutes();
+    this.setupFinalHandlers();
   }
 
   /**

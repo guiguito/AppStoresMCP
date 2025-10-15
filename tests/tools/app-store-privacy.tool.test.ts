@@ -4,12 +4,12 @@
 
 import { AppStorePrivacyTool } from '../../src/tools/app-store-privacy.tool';
 
-// Mock app-store-scraper
-jest.mock('app-store-scraper', () => ({
+// Mock app-store-scraper-ts
+jest.mock('app-store-scraper-ts', () => ({
   privacy: jest.fn()
 }));
 
-const mockStore = require('app-store-scraper');
+const mockStore = jest.requireMock('app-store-scraper-ts');
 
 describe('AppStorePrivacyTool', () => {
   let tool: AppStorePrivacyTool;

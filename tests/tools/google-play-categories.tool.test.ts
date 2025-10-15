@@ -3,10 +3,7 @@
  */
 
 import { GooglePlayCategoriesTool } from '../../src/tools/google-play-categories.tool';
-
-// Use manual mock from __mocks__/google-play-scraper.js
-jest.mock('google-play-scraper');
-const mockGplay = require('google-play-scraper');
+import { mockCategories } from '../__mocks__/google-play-scraper-ts';
 
 describe('GooglePlayCategoriesTool', () => {
   let tool: GooglePlayCategoriesTool;
@@ -70,29 +67,29 @@ describe('GooglePlayCategoriesTool', () => {
         'VIDEO_PLAYERS',
         'WEATHER'
       ];
-      mockGplay.categories.mockResolvedValue(mockCategoriesData);
+      mockCategories.mockResolvedValue(mockCategoriesData);
 
       const result = await tool.execute();
 
       expect(result).toEqual(mockCategoriesData);
-      expect(mockGplay.categories).toHaveBeenCalledWith();
+      expect(mockCategories).toHaveBeenCalledWith();
     });
 
     it('should work without any parameters', async () => {
       const mockCategoriesData = ['GAMES', 'EDUCATION', 'BUSINESS'];
-      mockGplay.categories.mockResolvedValue(mockCategoriesData);
+      mockCategories.mockResolvedValue(mockCategoriesData);
 
       const result = await tool.execute();
 
       expect(result).toEqual(mockCategoriesData);
-      expect(mockGplay.categories).toHaveBeenCalledTimes(1);
+      expect(mockCategories).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('Error Handling', () => {
     it('should handle google-play-scraper errors', async () => {
       const error = new Error('Network error');
-      mockGplay.categories.mockRejectedValue(error);
+      mockCategories.mockRejectedValue(error);
 
       const result = await tool.execute();
 
@@ -104,7 +101,7 @@ describe('GooglePlayCategoriesTool', () => {
 
     it('should handle unknown errors', async () => {
       const error = new Error();
-      mockGplay.categories.mockRejectedValue(error);
+      mockCategories.mockRejectedValue(error);
 
       const result = await tool.execute();
 
@@ -130,7 +127,7 @@ describe('GooglePlayCategoriesTool', () => {
         'ENTERTAINMENT'
       ];
 
-      mockGplay.categories.mockResolvedValue(mockRawData);
+      mockCategories.mockResolvedValue(mockRawData);
 
       const result = await tool.execute();
 
@@ -163,7 +160,7 @@ describe('GooglePlayCategoriesTool', () => {
         }
       ];
 
-      mockGplay.categories.mockResolvedValue(mockRawData);
+      mockCategories.mockResolvedValue(mockRawData);
 
       const result = await tool.execute();
 
@@ -175,7 +172,7 @@ describe('GooglePlayCategoriesTool', () => {
     it('should handle empty categories list', async () => {
       const mockRawData: string[] = [];
 
-      mockGplay.categories.mockResolvedValue(mockRawData);
+      mockCategories.mockResolvedValue(mockRawData);
 
       const result = await tool.execute();
 

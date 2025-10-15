@@ -5,11 +5,12 @@
 import { AppStoreDeveloperTool } from '../../src/tools/app-store-developer.tool';
 
 // Mock app-store-scraper
-jest.mock('app-store-scraper', () => ({
+jest.mock('app-store-scraper-ts', () => ({
   developer: jest.fn()
 }));
 
-const mockStore = require('app-store-scraper');
+// Import the mocked module to access mock functions
+const mockStore = jest.requireMock('app-store-scraper-ts');
 
 describe('AppStoreDeveloperTool', () => {
   let tool: AppStoreDeveloperTool;

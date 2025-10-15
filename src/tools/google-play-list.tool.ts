@@ -6,8 +6,7 @@
 import { MCPTool } from '../types/mcp';
 import { JSONSchema7 } from 'json-schema';
 
-// Use require for CommonJS compatibility with Jest mocking
-const gplay = require('google-play-scraper');
+import gplay from 'google-play-scraper-ts';
 
 /**
  * Input parameters for Google Play list tool
@@ -173,18 +172,27 @@ export class GooglePlayListTool implements MCPTool {
    */
   private async mapCollection(collection: string): Promise<any> {
     switch (collection) {
+      case 'topselling_free':
       case 'TOP_FREE':
         return gplay.collection.TOP_FREE;
+      case 'topselling_paid':
       case 'TOP_PAID':
         return gplay.collection.TOP_PAID;
+      case 'grossing':
       case 'GROSSING':
         return gplay.collection.GROSSING;
+      case 'trending':
       case 'TRENDING':
-        return gplay.collection.TRENDING;
+        // TRENDING not available in google-play-scraper-ts, fall back to TOP_FREE
+        return gplay.collection.TOP_FREE;
+      case 'topselling_new_free':
       case 'NEW_FREE':
-        return gplay.collection.NEW_FREE;
+        // NEW_FREE not available in google-play-scraper-ts, fall back to TOP_FREE
+        return gplay.collection.TOP_FREE;
+      case 'topselling_new_paid':
       case 'NEW_PAID':
-        return gplay.collection.NEW_PAID;
+        // NEW_PAID not available in google-play-scraper-ts, fall back to TOP_PAID
+        return gplay.collection.TOP_PAID;
       default:
         return gplay.collection.TOP_FREE;
     }

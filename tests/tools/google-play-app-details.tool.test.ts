@@ -3,10 +3,7 @@
  */
 
 import { GooglePlayAppDetailsTool } from '../../src/tools/google-play-app-details.tool';
-
-// Use manual mock from __mocks__/google-play-scraper.js
-jest.mock('google-play-scraper');
-const mockGooglePlayScraper = require('google-play-scraper');
+import { mockApp } from '../__mocks__/google-play-scraper-ts';
 
 describe('GooglePlayAppDetailsTool', () => {
   let tool: GooglePlayAppDetailsTool;
@@ -67,12 +64,12 @@ describe('GooglePlayAppDetailsTool', () => {
 
   describe('Parameter Validation', () => {
     it('should execute successfully with valid appId', async () => {
-      mockGooglePlayScraper.app.mockResolvedValue(mockRawAppDetails);
+      mockApp.mockResolvedValue(mockRawAppDetails);
 
       const result = await tool.execute({ appId: 'com.example.testapp' });
 
       expect(result).toEqual(mockRawAppDetails);
-      expect(mockGooglePlayScraper.app).toHaveBeenCalledWith({
+      expect(mockApp).toHaveBeenCalledWith({
         appId: 'com.example.testapp',
         lang: 'en',
         country: 'us'
@@ -80,7 +77,7 @@ describe('GooglePlayAppDetailsTool', () => {
     });
 
     it('should execute successfully with valid appId and optional parameters', async () => {
-      mockGooglePlayScraper.app.mockResolvedValue(mockRawAppDetails);
+      mockApp.mockResolvedValue(mockRawAppDetails);
 
       const result = await tool.execute({
         appId: 'com.example.testapp',
@@ -89,7 +86,7 @@ describe('GooglePlayAppDetailsTool', () => {
       });
 
       expect(result).toEqual(mockRawAppDetails);
-      expect(mockGooglePlayScraper.app).toHaveBeenCalledWith({
+      expect(mockApp).toHaveBeenCalledWith({
         appId: 'com.example.testapp',
         lang: 'es',
         country: 'mx'
@@ -145,20 +142,20 @@ describe('GooglePlayAppDetailsTool', () => {
 
   describe('Google Play Scraper Integration', () => {
     it('should call google-play-scraper with correct parameters', async () => {
-      mockGooglePlayScraper.app.mockResolvedValue(mockRawAppDetails);
+      mockApp.mockResolvedValue(mockRawAppDetails);
 
       await tool.execute({ appId: 'com.example.testapp' });
 
-      expect(mockGooglePlayScraper.app).toHaveBeenCalledWith({
+      expect(mockApp).toHaveBeenCalledWith({
         appId: 'com.example.testapp',
         lang: 'en',
         country: 'us'
       });
     });
 
-    it('should handle google-play-scraper errors', async () => {
+    it('should handle scraper errors gracefully', async () => {
       const scraperError = new Error('Network error');
-      mockGooglePlayScraper.app.mockRejectedValue(scraperError);
+      mockApp.mockRejectedValue(scraperError);
 
       const result = await tool.execute({ appId: 'com.example.testapp' });
 
@@ -170,7 +167,7 @@ describe('GooglePlayAppDetailsTool', () => {
 
     it('should handle app not found errors', async () => {
       const notFoundError = new Error('App not found');
-      mockGooglePlayScraper.app.mockRejectedValue(notFoundError);
+      mockApp.mockRejectedValue(notFoundError);
 
       const result = await tool.execute({ appId: 'com.nonexistent.app' });
 
@@ -182,7 +179,7 @@ describe('GooglePlayAppDetailsTool', () => {
 
     it('should handle unexpected errors', async () => {
       const unexpectedError = new Error('Unexpected error');
-      mockGooglePlayScraper.app.mockRejectedValue(unexpectedError);
+      mockApp.mockRejectedValue(unexpectedError);
 
       const result = await tool.execute({ appId: 'com.example.testapp' });
 
@@ -195,7 +192,7 @@ describe('GooglePlayAppDetailsTool', () => {
 
   describe('Response Format', () => {
     it('should return raw google-play-scraper response', async () => {
-      mockGooglePlayScraper.app.mockResolvedValue(mockRawAppDetails);
+      mockApp.mockResolvedValue(mockRawAppDetails);
 
       const result = await tool.execute({ appId: 'com.example.testapp' });
 
@@ -216,7 +213,7 @@ describe('GooglePlayAppDetailsTool', () => {
         arrayField: [1, 2, 3]
       };
       
-      mockGooglePlayScraper.app.mockResolvedValue(extendedRawResponse);
+      mockApp.mockResolvedValue(extendedRawResponse);
 
       const result = await tool.execute({ appId: 'com.example.testapp' });
 
@@ -256,7 +253,7 @@ describe('GooglePlayAppDetailsTool', () => {
     });
 
     it('should handle valid language codes', async () => {
-      mockGooglePlayScraper.app.mockResolvedValue(mockRawAppDetails);
+      mockApp.mockResolvedValue(mockRawAppDetails);
 
       const validLangCodes = ['en', 'es', 'fr', 'de', 'ja', 'ko'];
       
@@ -270,7 +267,7 @@ describe('GooglePlayAppDetailsTool', () => {
     });
 
     it('should handle valid country codes', async () => {
-      mockGooglePlayScraper.app.mockResolvedValue(mockRawAppDetails);
+      mockApp.mockResolvedValue(mockRawAppDetails);
 
       const validCountryCodes = ['us', 'mx', 'ca', 'gb', 'de', 'jp'];
       

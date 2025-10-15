@@ -7,7 +7,7 @@ module.exports = {
     '^.+\\.ts$': 'ts-jest',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(google-play-scraper|app-store-scraper|ramda)/)'
+    'node_modules/(?!(google-play-scraper-ts|app-store-scraper-ts)/)'
   ],
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -22,7 +22,7 @@ module.exports = {
     NODE_ENV: 'test'
   },
   moduleNameMapper: {
-    '^app-store-scraper$': '<rootDir>/__mocks__/app-store-scraper.js',
-    '^google-play-scraper$': '<rootDir>/__mocks__/google-play-scraper.js'
+    '^app-store-scraper-ts$': '<rootDir>/tests/__mocks__/app-store-scraper-ts.ts',
+    '^google-play-scraper-ts$': '<rootDir>/tests/__mocks__/google-play-scraper-ts.ts'
   }
 };

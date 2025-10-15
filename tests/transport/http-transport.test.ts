@@ -21,6 +21,8 @@ describe('HTTPTransportHandler', () => {
     mockRequestHandler = jest.fn();
     transportHandler = new HTTPTransportHandler(defaultConfig);
     transportHandler.setRequestHandler(mockRequestHandler);
+    // Finalize routes to set up 404 and error handlers (since no SSE in unit tests)
+    transportHandler.finalizeRoutes();
   });
 
   afterEach(async () => {

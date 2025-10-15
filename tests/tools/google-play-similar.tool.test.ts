@@ -3,10 +3,7 @@
  */
 
 import { GooglePlaySimilarTool } from '../../src/tools/google-play-similar.tool';
-
-// Use manual mock from __mocks__/google-play-scraper.js
-jest.mock('google-play-scraper');
-const mockGplay = require('google-play-scraper');
+import { mockSimilar } from '../__mocks__/google-play-scraper-ts';
 
 describe('GooglePlaySimilarTool', () => {
   let tool: GooglePlaySimilarTool;
@@ -45,7 +42,7 @@ describe('GooglePlaySimilarTool', () => {
         { appId: 'com.similar.app1', title: 'Similar App 1', developer: 'Developer 1' },
         { appId: 'com.similar.app2', title: 'Similar App 2', developer: 'Developer 2' }
       ];
-      mockGplay.similar.mockResolvedValue(mockSimilarData);
+      mockSimilar.mockResolvedValue(mockSimilarData);
 
       const result = await tool.execute({
         appId: 'com.example.app',
@@ -55,7 +52,7 @@ describe('GooglePlaySimilarTool', () => {
       });
 
       expect(result).toEqual(mockSimilarData);
-      expect(mockGplay.similar).toHaveBeenCalledWith({
+      expect(mockSimilar).toHaveBeenCalledWith({
         appId: 'com.example.app',
         lang: 'en',
         country: 'us',
@@ -65,12 +62,12 @@ describe('GooglePlaySimilarTool', () => {
 
     it('should use default values for optional parameters', async () => {
       const mockSimilarData = [{ appId: 'com.similar.app', title: 'Similar App' }];
-      mockGplay.similar.mockResolvedValue(mockSimilarData);
+      mockSimilar.mockResolvedValue(mockSimilarData);
 
       const result = await tool.execute({ appId: 'com.example.app' });
 
       expect(result).toEqual(mockSimilarData);
-      expect(mockGplay.similar).toHaveBeenCalledWith({
+      expect(mockSimilar).toHaveBeenCalledWith({
         appId: 'com.example.app',
         lang: 'en',
         country: 'us',
@@ -104,7 +101,7 @@ describe('GooglePlaySimilarTool', () => {
 
     it('should accept valid package name formats', async () => {
       const mockSimilarData = [{ appId: 'com.similar.app', title: 'Similar App' }];
-      mockGplay.similar.mockResolvedValue(mockSimilarData);
+      mockSimilar.mockResolvedValue(mockSimilarData);
 
       const validAppIds = [
         'com.example.app',
@@ -114,7 +111,7 @@ describe('GooglePlaySimilarTool', () => {
       ];
 
       for (const appId of validAppIds) {
-        mockGplay.similar.mockClear();
+        mockSimilar.mockClear();
         const result = await tool.execute({ appId });
         expect(result).toEqual(mockSimilarData);
       }
@@ -148,7 +145,7 @@ describe('GooglePlaySimilarTool', () => {
   describe('Error Handling', () => {
     it('should handle app not found errors', async () => {
       const error = new Error('App not found');
-      mockGplay.similar.mockRejectedValue(error);
+      mockSimilar.mockRejectedValue(error);
 
       const result = await tool.execute({ appId: 'com.nonexistent.app' });
 
@@ -160,7 +157,7 @@ describe('GooglePlaySimilarTool', () => {
 
     it('should handle google-play-scraper errors', async () => {
       const error = new Error('Network error');
-      mockGplay.similar.mockRejectedValue(error);
+      mockSimilar.mockRejectedValue(error);
 
       const result = await tool.execute({ appId: 'com.example.app' });
 
@@ -207,7 +204,7 @@ describe('GooglePlaySimilarTool', () => {
         }
       ];
 
-      mockGplay.similar.mockResolvedValue(mockRawData);
+      mockSimilar.mockResolvedValue(mockRawData);
 
       const result = await tool.execute({ appId: 'com.example.app' });
 

@@ -3,10 +3,7 @@
  */
 
 import { GooglePlayListTool } from '../../src/tools/google-play-list.tool';
-
-// Use manual mock from __mocks__/google-play-scraper.js
-jest.mock('google-play-scraper');
-const mockGplay = require('google-play-scraper');
+import { mockList } from '../__mocks__/google-play-scraper-ts';
 
 describe('GooglePlayListTool', () => {
   let tool: GooglePlayListTool;
@@ -47,7 +44,7 @@ describe('GooglePlayListTool', () => {
         { appId: 'com.example.app1', title: 'Test App 1' },
         { appId: 'com.example.app2', title: 'Test App 2' }
       ];
-      mockGplay.list.mockResolvedValue(mockListData);
+      mockList.mockResolvedValue(mockListData);
 
       const result = await tool.execute({
         collection: 'TOP_FREE',
@@ -58,8 +55,8 @@ describe('GooglePlayListTool', () => {
       });
 
       expect(result).toEqual(mockListData);
-      expect(mockGplay.list).toHaveBeenCalledWith({
-        collection: 'topselling_free',
+      expect(mockList).toHaveBeenCalledWith({
+        collection: 'TOP_FREE',
         num: 10,
         lang: 'en',
         country: 'us',
@@ -69,12 +66,12 @@ describe('GooglePlayListTool', () => {
 
     it('should use default values when no parameters provided', async () => {
       const mockListData = [{ appId: 'com.example.app', title: 'Test App' }];
-      mockGplay.list.mockResolvedValue(mockListData);
+      mockList.mockResolvedValue(mockListData);
 
       const result = await tool.execute();
 
       expect(result).toEqual(mockListData);
-      expect(mockGplay.list).toHaveBeenCalledWith({
+      expect(mockList).toHaveBeenCalledWith({
         num: 50,
         lang: 'en',
         country: 'us',
@@ -84,15 +81,15 @@ describe('GooglePlayListTool', () => {
 
     it('should handle category parameter', async () => {
       const mockListData = [{ appId: 'com.example.game', title: 'Test Game' }];
-      mockGplay.list.mockResolvedValue(mockListData);
+      mockList.mockResolvedValue(mockListData);
 
       await tool.execute({
         category: 'GAME',
         collection: 'TOP_FREE'
       });
 
-      expect(mockGplay.list).toHaveBeenCalledWith({
-        collection: 'topselling_free',
+      expect(mockList).toHaveBeenCalledWith({
+        collection: 'TOP_FREE',
         category: 'GAME',
         num: 50,
         lang: 'en',
@@ -103,15 +100,15 @@ describe('GooglePlayListTool', () => {
 
     it('should handle age parameter', async () => {
       const mockListData = [{ appId: 'com.example.kids', title: 'Kids App' }];
-      mockGplay.list.mockResolvedValue(mockListData);
+      mockList.mockResolvedValue(mockListData);
 
       await tool.execute({
         age: 'AGE_RANGE1',
         collection: 'TOP_FREE'
       });
 
-      expect(mockGplay.list).toHaveBeenCalledWith({
-        collection: 'topselling_free',
+      expect(mockList).toHaveBeenCalledWith({
+        collection: 'TOP_FREE',
         age: 'AGE_RANGE1',
         num: 50,
         lang: 'en',
@@ -156,22 +153,23 @@ describe('GooglePlayListTool', () => {
   describe('Collection Mapping', () => {
     it('should map collection strings correctly', async () => {
       const mockListData = [{ appId: 'com.example.app', title: 'Test App' }];
-      mockGplay.list.mockResolvedValue(mockListData);
+      mockList.mockResolvedValue(mockListData);
 
-      const collections = [
-        { input: 'TOP_FREE', expected: 'topselling_free' },
-        { input: 'TOP_PAID', expected: 'topselling_paid' },
-        { input: 'NEW_FREE', expected: 'topnewfree' },
-        { input: 'NEW_PAID', expected: 'topnewpaid' },
-        { input: 'TRENDING', expected: 'movers_shakers' },
-        { input: 'GROSSING', expected: 'topgrossing' }
+      const collectionMappings = [
+        { input: 'topselling_free', expected: 'TOP_FREE' },
+        { input: 'TOP_FREE', expected: 'TOP_FREE' },
+        { input: 'topselling_paid', expected: 'TOP_PAID' },
+        { input: 'TOP_PAID', expected: 'TOP_PAID' },
+        { input: 'grossing', expected: 'GROSSING' },
+        { input: 'GROSSING', expected: 'GROSSING' }
+        // NOTE: NEW_FREE, NEW_PAID, TRENDING fallback to TOP_FREE/TOP_PAID in google-play-scraper-ts
       ];
 
-      for (const { input, expected } of collections) {
-        mockGplay.list.mockClear();
+      for (const { input, expected } of collectionMappings) {
+        mockList.mockClear();
         await tool.execute({ collection: input });
         
-        expect(mockGplay.list).toHaveBeenCalledWith(
+        expect(mockList).toHaveBeenCalledWith(
           expect.objectContaining({ collection: expected })
         );
       }
@@ -181,7 +179,7 @@ describe('GooglePlayListTool', () => {
   describe('Error Handling', () => {
     it('should handle google-play-scraper errors', async () => {
       const error = new Error('Network error');
-      mockGplay.list.mockRejectedValue(error);
+      mockList.mockRejectedValue(error);
 
       const result = await tool.execute({ collection: 'TOP_FREE' });
 
@@ -224,7 +222,7 @@ describe('GooglePlayListTool', () => {
         }
       };
 
-      mockGplay.list.mockResolvedValue(mockRawData);
+      mockList.mockResolvedValue(mockRawData);
 
       const result = await tool.execute({ collection: 'TOP_FREE' });
 

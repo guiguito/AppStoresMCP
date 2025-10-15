@@ -1,9 +1,9 @@
 /**
  * Apple App Store scraper service wrapper
- * Wraps app-store-scraper library with standardized interfaces and error handling
+ * Wraps app-store-scraper-ts library with standardized interfaces and error handling
  */
 
-const store = require('app-store-scraper');
+import * as store from 'app-store-scraper-ts';
 import { AppDetails, Review, SearchResult, ReviewsOptions, SearchOptions, AppDetailsOptions } from '../types/app-store';
 
 /**
@@ -108,7 +108,7 @@ export class AppStoreScraperService {
     }): Promise<any> {
         try {
             const listParams: any = {
-                collection: options?.collection || store.collection.TOP_FREE,
+                collection: options?.collection || store.constants.collection.TOP_FREE_IOS,
                 country: options?.country || 'us',
                 lang: options?.lang || 'en',
                 num: options?.num ? Math.min(options.num, 100) : 50,
@@ -321,13 +321,16 @@ export class AppStoreScraperService {
     private mapSortOption(sort?: string): string {
         switch (sort) {
             case 'newest':
-                return store.sort.RECENT;
+            case 'recent':
+            case 'mostRecent':
+                return store.constants.sort.RECENT;
             case 'rating':
-                return store.sort.HELPFUL;
             case 'helpfulness':
-                return store.sort.HELPFUL;
+            case 'helpful':
+            case 'mostHelpful':
+                return store.constants.sort.HELPFUL;
             default:
-                return store.sort.RECENT;
+                return store.constants.sort.HELPFUL;
         }
     }
 

@@ -47,7 +47,7 @@ export class AppStoreDeveloperTool implements MCPTool {
   };
 
   constructor() {
-    // No dependencies needed - calling app-store-scraper directly
+    // No dependencies needed - calling app-store-scraper-ts directly
   }
 
   /**
@@ -57,8 +57,8 @@ export class AppStoreDeveloperTool implements MCPTool {
     // Validate input parameters
     this.validateParams(params);
 
-    // Fetch raw developer data directly from app-store-scraper
-    const store = require('app-store-scraper');
+    // Fetch raw developer data directly from app-store-scraper-ts
+    const store = await import('app-store-scraper-ts');
     
     const developerParams: any = {
       devId: params.devId,
