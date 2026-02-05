@@ -35,7 +35,7 @@
   "dependencies": {
     "@types/json-schema": "^7.0.15",
     "@types/uuid": "^10.0.0",
-    "app-store-scraper-ts": "^0.2.0",
+    "app-store-scraper-ts": "^0.3.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "google-play-scraper-ts": "^0.2.0",
