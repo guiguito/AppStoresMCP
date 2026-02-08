@@ -38,7 +38,7 @@
     "app-store-scraper-ts": "^0.3.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
-    "google-play-scraper-ts": "^0.2.0",
+    "google-play-scraper-ts": "^0.3.0",
     "helmet": "^8.1.0",
     "node-fetch": "^3.3.2",
     "uuid": "^11.1.0"
