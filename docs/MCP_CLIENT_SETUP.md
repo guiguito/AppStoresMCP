@@ -312,25 +312,26 @@ curl -X POST http://localhost:3000/mcp \
 
 ### 4. Verify in MCP Client
 
-Once configured, you should see 19 comprehensive tools available in your MCP client:
+Once configured, you should see 20 tools available in your MCP client:
 
-**Google Play Store Tools (10 tools):**
+**Google Play Store Tools (11 tools):**
 - `google-play-app-details` - Get detailed app information
-- `google-play-app-reviews` - Get app reviews with token-based pagination
-- `google-play-search` - Search for apps (up to 100 results, no pagination)
-- `google-play-list` - Get app lists from collections and categories (up to 100 results, no pagination)
-- `google-play-developer` - Get all apps by a specific developer with token-based pagination
+- `google-play-app-reviews` - Get app reviews with token-based pagination, filterable by star rating and device
+- `google-play-search` - Search for apps (up to 250 results; most queries return Play's first page of ~30)
+- `google-play-list` - Get app lists from collections and categories (up to 500 results)
+- `google-play-developer` - Get all apps by a developer (pass the `developerId` from app details)
 - `google-play-suggest` - Get search suggestions
 - `google-play-similar` - Find similar apps
 - `google-play-permissions` - Get app permissions information
 - `google-play-datasafety` - Get app data safety information
+- `google-play-availability` - Check in which countries an app is offered
 - `google-play-categories` - Get list of available categories
 
 **Apple App Store Tools (9 tools):**
-- `app-store-app-details` - Get detailed app information
+- `app-store-app-details` - Get detailed app information (optionally subtitle and in-app purchases)
 - `app-store-app-reviews` - Get app reviews with page-based pagination
-- `app-store-search` - Search for apps (up to 100 results, no pagination)
-- `app-store-list` - Get app lists from collections and categories (up to 100 results, no pagination)
+- `app-store-search` - Search for apps (paginated via `page`)
+- `app-store-list` - Get app lists from collections and categories (up to 200 results)
 - `app-store-developer` - Get all apps by a specific developer
 - `app-store-privacy` - Get app privacy information
 - `app-store-suggest` - Get search suggestions

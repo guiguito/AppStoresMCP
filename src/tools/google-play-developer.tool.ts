@@ -5,7 +5,8 @@
 import gplay from 'google-play-scraper-ts';
 import { JSONSchema7 } from 'json-schema';
 import { MCPTool } from '../types/mcp';
-import { country, fullDetail, lang } from './common';
+import { omitFields, PLAY_SUMMARY_OMIT } from '../utils/response-filter';
+import { country, lang, playFullDetail } from './common';
 
 interface GooglePlayDeveloperParams {
   devId: string;
@@ -36,19 +37,20 @@ export class GooglePlayDeveloperTool implements MCPTool {
         maximum: 100,
         default: 50
       },
-      fullDetail
+      fullDetail: playFullDetail
     },
     required: ['devId'],
     additionalProperties: false
   };
 
   async execute(params: GooglePlayDeveloperParams): Promise<unknown> {
-    return gplay.developer({
+    const results = await gplay.developer({
       devId: params.devId,
       lang: params.lang || 'en',
       country: params.country || 'us',
       num: params.num || 50,
       fullDetail: params.fullDetail || false
     });
+    return params.fullDetail ? results : omitFields(results, PLAY_SUMMARY_OMIT);
   }
 }

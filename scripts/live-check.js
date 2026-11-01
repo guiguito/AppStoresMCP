@@ -10,8 +10,8 @@ const { loadConfig } = require('../dist/config/server-config');
 
 const CALLS = {
   'google-play-app-details': { appId: 'com.spotify.music' },
-  'google-play-app-reviews': { appId: 'com.spotify.music', num: 5 },
-  'google-play-search': { query: 'spotify', num: 3 },
+  'google-play-app-reviews': { appId: 'com.spotify.music', num: 5, score: 1, device: 'MOBILE' },
+  'google-play-search': { query: 'a', num: 60 },
   'google-play-list': { collection: 'TOP_FREE', num: 3 },
   'google-play-developer': { devId: 'Spotify AB', num: 3 },
   'google-play-suggest': { term: 'spot' },
@@ -19,7 +19,8 @@ const CALLS = {
   'google-play-permissions': { appId: 'com.spotify.music' },
   'google-play-datasafety': { appId: 'com.spotify.music' },
   'google-play-categories': {},
-  'app-store-app-details': { appId: 'com.duolingo.DuolingoMobile', subtitle: true },
+  'google-play-availability': { appId: 'com.venmo', countries: ['us', 'fr'] },
+  'app-store-app-details': { appId: 'com.duolingo.DuolingoMobile', subtitle: true, inAppPurchases: true },
   'app-store-app-reviews': { appId: '324684580', sort: 'helpfulness' },
   'app-store-search': { query: 'duolingo', num: 3, subtitle: true },
   'app-store-list': { num: 3, fullDetail: true, subtitle: true },
@@ -34,7 +35,17 @@ const CALLS = {
 const CHECKS = {
   'google-play-app-details': app => typeof app.releasedTimestamp === 'number' && app.developerId === 'Spotify AB'
     || `releasedTimestamp=${app.releasedTimestamp} developerId=${app.developerId}`,
-  'app-store-app-details': app => typeof app.subtitle === 'string' && app.subtitle.length > 0 || `subtitle=${app.subtitle}`,
+  'app-store-app-details': app => typeof app.subtitle === 'string' && app.subtitle.length > 0
+    && Array.isArray(app.inAppPurchases) && app.inAppPurchases.length > 0 && typeof app.inAppPurchases[0].price === 'number'
+    || `subtitle=${app.subtitle} inAppPurchases=${JSON.stringify(app.inAppPurchases)?.slice(0, 80)}`,
+  // 0.5.0: search continues past Play's first page for some queries, and summary cards lose descriptionHTML
+  'google-play-search': apps => apps.length > 30 && apps.every(a => !('descriptionHTML' in a))
+    || `${apps.length} results, descriptionHTML present: ${apps.some(a => 'descriptionHTML' in a)}`,
+  'google-play-list': apps => apps.every(a => !('descriptionHTML' in a)) || 'descriptionHTML not stripped',
+  'google-play-app-reviews': page => page.data.length > 0 && page.data.every(r => r.score === 1) || `scores=${page.data.map(r => r.score)}`,
+  'google-play-availability': map => map.us === true && map.fr === false || JSON.stringify(map),
+  'app-store-privacy': p => typeof p.privacyPolicyUrl === 'string' || `privacyPolicyUrl=${p.privacyPolicyUrl}`,
+  'app-store-app-reviews': reviews => reviews.every(r => Number.isInteger(r.voteSum) && Number.isInteger(r.voteCount)) || 'voteSum/voteCount missing',
   'app-store-search': apps => apps.some(a => typeof a.subtitle === 'string') || 'no subtitle in any result',
   'app-store-list': apps => apps.some(a => typeof a.subtitle === 'string') || 'no subtitle in any result',
 };

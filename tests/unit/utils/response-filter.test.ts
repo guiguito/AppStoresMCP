@@ -95,6 +95,8 @@ describe('Response Filter Utils', () => {
       date: '2023-01-01',
       version: '1.0.0',
       updated: '2023-01-01',
+      voteSum: 3,
+      voteCount: 5,
       // Fields that should be filtered out
       url: 'https://example.com/review',
       thumbsUp: 10,
@@ -136,6 +138,8 @@ describe('Response Filter Utils', () => {
       expect(result[0].text).toBe('This app is amazing');
       expect(result[0].version).toBe('1.0.0');
       expect(result[0].updated).toBe('2023-01-01');
+      expect(result[0].voteSum).toBe(3);
+      expect(result[0].voteCount).toBe(5);
       
       // Should remove non-essential fields
       expect(result[0].url).toBeUndefined();

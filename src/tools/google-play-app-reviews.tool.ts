@@ -13,6 +13,8 @@ interface GooglePlayAppReviewsParams {
   num?: number;
   nextPaginationToken?: string;
   sort?: 'newest' | 'rating' | 'helpfulness';
+  score?: 1 | 2 | 3 | 4 | 5;
+  device?: keyof typeof gplay.device;
   lang?: string;
   country?: string;
   fullDetail?: boolean;
@@ -26,7 +28,7 @@ const SORT = {
 
 export class GooglePlayAppReviewsTool implements MCPTool {
   public readonly name = 'google-play-app-reviews';
-  public readonly description = 'Get reviews for a Google Play Store app with token-based pagination. Use nextPaginationToken from response for subsequent pages.';
+  public readonly description = 'Get reviews for a Google Play Store app with token-based pagination, optionally filtered by star rating and device. Use nextPaginationToken from the response for subsequent pages (with the same filters).';
 
   public readonly inputSchema: JSONSchema7 = {
     type: 'object',
@@ -34,9 +36,9 @@ export class GooglePlayAppReviewsTool implements MCPTool {
       appId: googlePlayAppId,
       num: {
         type: 'integer',
-        description: 'Number of reviews to fetch (default: 100, max: 150)',
+        description: 'Number of reviews to fetch in this page (default: 100, max: 4500, one request). Large pages make large responses; prefer the default and paginate.',
         minimum: 1,
-        maximum: 150,
+        maximum: 4500,
         default: 100
       },
       nextPaginationToken: {
@@ -49,6 +51,16 @@ export class GooglePlayAppReviewsTool implements MCPTool {
         description: 'Sort order for reviews',
         enum: ['newest', 'rating', 'helpfulness'],
         default: 'newest'
+      },
+      score: {
+        type: 'integer',
+        description: 'Only reviews with this star rating (filtered by Google Play). Pass the same value with each nextPaginationToken.',
+        enum: [1, 2, 3, 4, 5]
+      },
+      device: {
+        type: 'string',
+        description: 'Only reviews written on this form factor (filtered by Google Play). Pass the same value with each nextPaginationToken.',
+        enum: Object.keys(gplay.device)
       },
       lang: lang('en'),
       country,
@@ -70,6 +82,8 @@ export class GooglePlayAppReviewsTool implements MCPTool {
       lang: params.lang || 'en',
       country: params.country || 'us',
       paginate: true,
+      ...(params.score ? { score: params.score } : {}),
+      ...(params.device ? { device: gplay.device[params.device] } : {}),
       ...(params.nextPaginationToken ? { nextPaginationToken: params.nextPaginationToken } : {})
     });
     return filterReviewData(reviews, params.fullDetail || false, 'google-play');

@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run test` - Run all tests (unit and integration)
 - `npm run test:unit` - Run unit tests only
 - `npm run test:integration` - Run integration tests (scrapers mocked)
-- `npm run test:live` - Build and call all 19 tools against the real stores (catches store/library drift; unit tests mock the scrapers)
+- `npm run test:live` - Build and call all 20 tools against the real stores (catches store/library drift; unit tests mock the scrapers)
 - `npm run test:coverage` - Run tests with coverage report
 - `npm run lint` - Run ESLint on `src`, `scripts`, `tools` and `examples`
 
@@ -32,7 +32,7 @@ This is a Node.js TypeScript MCP (Model Context Protocol) server that provides a
 
 **MCPServer** (`src/server.ts`) - Main orchestrator that manages:
 - HTTP and SSE transport handlers
-- Tool registry with 19 MCP tools
+- Tool registry with 20 MCP tools
 - Configuration management
 - Graceful shutdown handling
 
@@ -46,7 +46,7 @@ This is a Node.js TypeScript MCP (Model Context Protocol) server that provides a
 - Returns raw data from underlying scraper libraries
 
 **Tool Registry** (`src/registry/tool-registry.ts`)
-- Manages 19 MCP tools (10 Google Play, 9 App Store)
+- Manages 20 MCP tools (11 Google Play, 9 App Store)
 - Each tool implements the `MCPTool` interface
 - Tools are located in `src/tools/` directory
 
@@ -62,7 +62,7 @@ Configuration is managed through environment variables via `src/config/server-co
 
 ### Tool Architecture
 
-All 19 tools follow the same pattern:
+All 20 tools follow the same pattern:
 1. Implement `MCPTool` interface from `src/types/mcp.ts`
 2. Call the scraper library directly (shared schemas in `src/tools/common.ts`)
 3. Inputs are validated against `inputSchema` (incl. `additionalProperties: false`) by `mcp-handler` before `execute` — tools don't re-validate
@@ -105,6 +105,7 @@ Comprehensive error handling through:
 
 - The server must have HTTP transport enabled (SSE requires HTTP endpoints)
 - All tools return raw data models to preserve complete information
+- Exceptions, for token cost: Google Play search/list/similar/developer summary results drop `descriptionHTML` (~85% of the payload since google-play-scraper-ts 0.5.0; `fullDetail: true` keeps it), and the `fullDetail: false` filters in `src/utils/response-filter.ts`
 - Configuration validation ensures proper transport setup
 - Graceful shutdown handling for production deployments
 - Security headers (helmet) and per-IP rate limiting (express-rate-limit) configured by default

@@ -20,6 +20,7 @@ import { GooglePlaySuggestTool } from './tools/google-play-suggest.tool';
 import { GooglePlaySimilarTool } from './tools/google-play-similar.tool';
 import { GooglePlayPermissionsTool } from './tools/google-play-permissions.tool';
 import { GooglePlayDataSafetyTool } from './tools/google-play-datasafety.tool';
+import { GooglePlayAvailabilityTool } from './tools/google-play-availability.tool';
 import { GooglePlayCategoriesTool } from './tools/google-play-categories.tool';
 import { AppStoreAppDetailsTool } from './tools/app-store-app-details.tool';
 import { AppStoreAppReviewsTool } from './tools/app-store-app-reviews.tool';
@@ -82,6 +83,7 @@ export class MCPServer {
       { name: 'google-play-similar', class: GooglePlaySimilarTool },
       { name: 'google-play-permissions', class: GooglePlayPermissionsTool },
       { name: 'google-play-datasafety', class: GooglePlayDataSafetyTool },
+      { name: 'google-play-availability', class: GooglePlayAvailabilityTool },
       { name: 'google-play-categories', class: GooglePlayCategoriesTool },
       
       // Apple App Store tools

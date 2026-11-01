@@ -33,6 +33,12 @@ export const subtitle: JSONSchema7 = {
   default: false
 };
 
+/** Google Play search/list/similar/developer: summary cards lose descriptionHTML unless fullDetail is set. */
+export const playFullDetail: JSONSchema7 = {
+  ...fullDetail,
+  description: 'Return full app details, one extra request per app (default: false). Without it, results are summary cards without descriptionHTML.'
+};
+
 export const googlePlayAppId: JSONSchema7 = {
   type: 'string',
   description: 'The Google Play Store app ID (package name, e.g., com.example.app)',

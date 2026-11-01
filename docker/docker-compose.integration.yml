@@ -1,4 +1,4 @@
-# Builds the image and runs the live check (all 19 tools against the real stores) inside it.
+# Builds the image and runs the live check (all 20 tools against the real stores) inside it.
 # Usage: npm run test:integration:docker
 services:
   live-check:

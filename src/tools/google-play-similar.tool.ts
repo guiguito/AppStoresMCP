@@ -5,7 +5,8 @@
 import gplay from 'google-play-scraper-ts';
 import { JSONSchema7 } from 'json-schema';
 import { MCPTool } from '../types/mcp';
-import { country, fullDetail, googlePlayAppId, lang } from './common';
+import { omitFields, PLAY_SUMMARY_OMIT } from '../utils/response-filter';
+import { country, googlePlayAppId, lang, playFullDetail } from './common';
 
 interface GooglePlaySimilarParams {
   appId: string;
@@ -24,18 +25,19 @@ export class GooglePlaySimilarTool implements MCPTool {
       appId: googlePlayAppId,
       lang: lang('en'),
       country,
-      fullDetail
+      fullDetail: playFullDetail
     },
     required: ['appId'],
     additionalProperties: false
   };
 
   async execute(params: GooglePlaySimilarParams): Promise<unknown> {
-    return gplay.similar({
+    const results = await gplay.similar({
       appId: params.appId,
       lang: params.lang || 'en',
       country: params.country || 'us',
       fullDetail: params.fullDetail || false
     });
+    return params.fullDetail ? results : omitFields(results, PLAY_SUMMARY_OMIT);
   }
 }

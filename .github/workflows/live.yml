@@ -1,6 +1,6 @@
 name: Live
 
-# Calls all 19 tools through the server against the real Google Play and App Store,
+# Calls all 20 tools through the server against the real Google Play and App Store,
 # so it catches store or scraper-library changes the mocked test suite can't.
 # Separate from CI and not required: the stores can rate-limit runner IPs.
 on:
