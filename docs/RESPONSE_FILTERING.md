@@ -1,191 +1,34 @@
-# Response Filtering for Token Usage Optimization
+# Response Filtering
 
-## Overview
+A few tools trim their responses to essential fields to reduce token usage. Everything else returns the raw data from `app-store-scraper-ts` / `google-play-scraper-ts` unchanged.
 
-The MCP server now includes automatic response filtering for list and search tools to significantly reduce token consumption. This feature filters out verbose fields like descriptions, summaries, and other non-essential data from responses when detailed information is not explicitly requested.
+## Which tools filter
 
-## Benefits
+| Tool | Behaviour |
+|------|-----------|
+| `app-store-search` | Always returns essential app fields only (no `fullDetail` option) |
+| `app-store-app-reviews` | Essential review fields unless `fullDetail: true` |
+| `google-play-app-reviews` | Essential review fields unless `fullDetail: true`; `nextPaginationToken` is always kept |
 
-- **93.4% reduction in token usage** for typical search/list responses
-- Faster response times due to smaller payloads
-- Reduced bandwidth usage
-- Improved performance for applications processing many results
-- Cost savings for token-based API usage
+The `fullDetail` option on the list/search/developer/similar tools is not a filter: it is passed to the library, which then fetches the full app details for every result instead of the lighter summary entries.
 
-## Affected Tools
+## Essential fields
 
-### Google Play Store Tools
-- `google-play-search` - Always filters responses (no fullDetail parameter)
-- `google-play-list` - Filters when `fullDetail=false` (default)
-- `google-play-app-reviews` - Filters when `fullDetail=false` (default)
+**App Store apps (`app-store-search`):** `id`, `appId`, `title`, `url`, `price`, `score`, `reviews` (rating count), `primaryGenre`, `developer`, `developerId`, `icon`, `free`.
 
-### Apple App Store Tools  
-- `app-store-search` - Always filters responses (no fullDetail parameter)
-- `app-store-list` - Filters when `fullDetail=false` (default)
-- `app-store-app-reviews` - Filters when `fullDetail=false` (default)
+**App Store reviews:** `id`, `version`, `userName`, `score`, `title`, `text`, `updated`.
 
-## Filtered Fields
+**Google Play reviews:** `id`, `userName`, `date`, `score`, `text`, `version`.
 
-The following fields are removed from non-detailed responses to reduce token consumption:
+## Example
 
-### Verbose Content Fields
-- `description` - Long app descriptions
-- `summary` - App summaries  
-- `descriptionHTML` - HTML formatted descriptions
-- `releaseNotes` - Version release notes
-- `whatsNew` - What's new in updates
-
-### Media and Assets
-- `screenshots` - Screenshot URLs array
-- `video` - Video URLs
-- `videoImage` - Video thumbnail URLs
-- `previewVideo` - Preview video data
-
-### Detailed Metadata
-- `permissions` - App permissions array
-- `reviews` - User reviews array
-- `histogram` - Rating distribution
-- `similarApps` - Similar apps data
-- `moreByDeveloper` - More apps by same developer
-- `dataSharing` - Data sharing information
-- `dataSafety` - Data safety details
-
-### Technical Details
-- `androidVersion` - Android version requirements
-- `size` - App size information
-- `version` - Current version
-- `updated` - Last update date
-- `installs` - Install count ranges
-- `contentRating` - Content rating details
-
-## Essential Fields (Always Kept)
-
-### App Data
-The following essential fields are always preserved for app data:
-
-- `id` / `appId` - Unique app identifier
-- `title` - App name
-- `url` - App store URL
-- `price` - App price
-- `rating` - Average rating
-- `ratingsCount` - Number of ratings
-
-### Review Data
-When `fullDetail=false` for review tools, only these essential fields are kept:
-
-**App Store Reviews:**
-- `id` - Review identifier
-- `version` - App version reviewed
-- `userName` - Reviewer username
-- `score` - Rating score (1-5)
-- `title` - Review title
-- `text` - Review text content
-- `updated` - Review update date
-
-**Google Play Reviews:**
-- `id` - Review identifier
-- `userName` - Reviewer username
-- `date` - Review date
-- `score` - Rating score (1-5)
-- `text` - Review text content
-- `version` - App version reviewed
-- `category` - App category
-- `developer` - Developer name
-- `developerId` - Developer identifier
-- `icon` - App icon URL
-- `free` - Whether app is free
-
-## Usage Examples
-
-### Default Behavior (Filtered)
 ```javascript
-// Google Play List - filtered by default
-const result = await tool.execute({
-  collection: 'TOP_FREE',
-  category: 'PRODUCTIVITY'
-});
-// Returns only essential fields, ~93% smaller response
+// app-store-app-reviews, filtered (default)
+await tool.execute({ appId: '553834731' });
+// -> [{ id, version, userName, score, title, text, updated }, ...]
 
-// App Store Search - always filtered
-const result = await tool.execute({
-  query: 'productivity apps'
-});
-// Returns only essential fields
+// full review objects (adds userUrl, url)
+await tool.execute({ appId: '553834731', fullDetail: true });
 ```
 
-### Full Detail Mode
-```javascript
-// Google Play List - get full details
-const result = await tool.execute({
-  collection: 'TOP_FREE', 
-  category: 'PRODUCTIVITY',
-  fullDetail: true  // Returns all fields including descriptions
-});
-
-// App Store List - get full details  
-const result = await tool.execute({
-  collection: 'topfreeapplications',
-  fullDetail: true  // Returns all fields including descriptions
-});
-```
-
-## Performance Impact
-
-### Before Filtering
-```json
-{
-  "id": "com.example.app",
-  "title": "Example App",
-  "description": "This is a very long description with detailed information about the app's features, functionality, and benefits that can consume hundreds of characters...",
-  "summary": "Short but still verbose summary text",
-  "screenshots": ["url1", "url2", "url3", "url4", "url5"],
-  "permissions": ["CAMERA", "LOCATION", "STORAGE", "CONTACTS"],
-  "reviews": [{"text": "Great app!", "rating": 5}, ...],
-  "releaseNotes": "Version 2.1.0 includes new features...",
-  // ... 15+ more verbose fields
-}
-```
-
-### After Filtering  
-```json
-{
-  "id": "com.example.app",
-  "title": "Example App", 
-  "developer": "Example Developer",
-  "price": 0,
-  "rating": 4.5,
-  "free": true,
-  "icon": "https://example.com/icon.png",
-  "url": "https://play.google.com/store/apps/details?id=com.example.app"
-}
-```
-
-## Configuration
-
-Response filtering is automatically enabled and cannot be disabled for search tools. For list tools, use the `fullDetail` parameter:
-
-- `fullDetail: false` (default) - Returns filtered response with essential fields only
-- `fullDetail: true` - Returns complete response with all fields
-
-## Migration Notes
-
-### Breaking Changes
-- Search and list responses now return fewer fields by default
-- Applications expecting full responses should set `fullDetail: true` for list tools
-- Search tools always return filtered responses (no fullDetail parameter available)
-
-### Backward Compatibility
-- All essential fields remain available
-- Existing applications using only basic fields (id, title, developer, price, rating) are unaffected
-- Applications needing full details can use `fullDetail: true` parameter where available
-
-## Implementation Details
-
-The filtering is implemented using a utility function that:
-1. Identifies essential vs. verbose fields
-2. Creates new objects containing only essential fields
-3. Handles arrays of apps correctly
-4. Preserves non-object data unchanged
-5. Maintains type safety with TypeScript
-
-See `src/utils/response-filter.ts` for implementation details.
+Implementation: `src/utils/response-filter.ts`.

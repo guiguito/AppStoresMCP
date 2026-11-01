@@ -31,7 +31,7 @@ The App Store MCP Server is a **remote HTTP-based MCP server** that provides app
 ### Transport Support
 
 - ✅ **HTTP Transport**: Native MCP over HTTP (recommended)
-- ✅ **SSE Transport**: Server-Sent Events with automatic initialization
+- ✅ **SSE Transport**: Standard MCP HTTP+SSE transport (protocol 2024-11-05)
 - ⚠️ **Stdio Support**: Available via external bridge utilities in `tools/` directory
 
 ### ⚠️ Important Notes
@@ -360,7 +360,9 @@ npm start
 
 #### 2. CORS Errors
 
-**Problem**: Browser-based clients blocked by CORS policy.
+**Problem**: Browser-based clients blocked by CORS policy, or requests rejected with `403 Origin not allowed`.
+
+By default no browser origin is allowed (requests without an `Origin` header, i.e. desktop/CLI clients, always pass).
 
 **Solution**: Configure CORS origins:
 ```bash
@@ -393,8 +395,8 @@ CORS_ORIGINS="*" npm start
 
 **Solutions**:
 ```bash
-# Increase timeout in server config
-SCRAPING_TIMEOUT=60000 npm start
+# Increase the /mcp request timeout (default 60000 ms)
+REQUEST_TIMEOUT=120000 npm start
 
 # Increase client timeout in MCP config
 {
@@ -402,30 +404,13 @@ SCRAPING_TIMEOUT=60000 npm start
 }
 ```
 
-#### 5. Rate Limiting
-
-**Problem**: Too many requests error.
-
-**Solutions**:
-```bash
-# Increase rate limits
-RATE_LIMIT_MAX_REQUESTS=200 npm start
-RATE_LIMIT_WINDOW_MS=900000 npm start
-
-# Check current rate limit status
-curl -I http://localhost:3000/health
-```
-
 ### Debug Mode
 
-Enable debug logging:
+Request logging is on by default (`ENABLE_LOGGING=true`); every request and every tool failure is logged as one JSON line:
 
 ```bash
-# Start server with debug logging
-LOG_LEVEL=debug npm start
-
-# Check server logs for MCP requests
-tail -f server.log | grep mcp
+npm start 2>&1 | tee server.log
+grep tool_error server.log
 ```
 
 ### Network Issues
@@ -562,7 +547,7 @@ Simply reference the bridge in your MCP client configuration:
 
 If you encounter issues:
 
-1. **Check server logs**: `LOG_LEVEL=debug npm start`
+1. **Check server logs**: `npm start` (JSON logs on stdout/stderr)
 2. **Verify connectivity**: `curl http://localhost:3000/health`
 3. **Test MCP endpoint**: Use the curl examples above
 4. **Check client documentation**: Refer to your MCP client's specific documentation

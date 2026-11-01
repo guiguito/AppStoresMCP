@@ -10,7 +10,6 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - LOG_LEVEL=info
       - HTTPS_ENABLED=true
       - HTTPS_KEY_PATH=/usr/src/app/ssl/server.key
       - HTTPS_CERT_PATH=/usr/src/app/ssl/server.crt

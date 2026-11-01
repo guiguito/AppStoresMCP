@@ -159,13 +159,14 @@ class HTTPSMCPClient {
       arguments: { query, ...options }
     });
 
-    if (response.result && response.result.content) {
-      const results = response.result.content[0];
-      console.log(`📱 Found ${results.apps?.length || 0} apps`);
+    if (response.result && response.result.content && !response.result.isError) {
+      // Tool output is JSON text in content[0]; google-play-search returns an array of apps
+      const results = JSON.parse(response.result.content[0].text);
+      console.log(`📱 Found ${results.length} apps`);
       
-      if (results.apps && results.apps.length > 0) {
+      if (results.length > 0) {
         console.log('Top results:');
-        results.apps.slice(0, 3).forEach((app, index) => {
+        results.slice(0, 3).forEach((app, index) => {
           console.log(`  ${index + 1}. ${app.title} (${app.appId})`);
           console.log(`     Rating: ${app.score} | Price: ${app.priceText || 'Free'}`);
         });

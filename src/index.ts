@@ -1,35 +1,25 @@
 /**
  * Main entry point for the App Store MCP Server
- * Initializes and starts the server with configuration management
  */
 
 import { MCPServer } from './server';
 import { loadConfig } from './config/server-config';
 
-/**
- * Main function to start the MCP server
- */
 async function main(): Promise<void> {
-  try {
-    // Load configuration from environment variables
-    const config = loadConfig();
-    
-    // Create and start the MCP server
-    const server = new MCPServer(config);
-    await server.start();
+  const server = new MCPServer(loadConfig());
+  await server.start();
 
-    // Log startup success
-    console.log(JSON.stringify({
-      timestamp: new Date().toISOString(),
-      level: 'info',
-      type: 'application_started',
-      message: 'App Store MCP Server application started successfully',
-      pid: process.pid,
-      nodeVersion: process.version,
-      platform: process.platform
-    }));
+  const shutdown = async (signal: string): Promise<void> => {
+    console.log(JSON.stringify({ timestamp: new Date().toISOString(), level: 'info', type: 'shutdown_signal', signal }));
+    await server.stop();
+    process.exit(0);
+  };
+  process.once('SIGTERM', () => void shutdown('SIGTERM'));
+  process.once('SIGINT', () => void shutdown('SIGINT'));
+}
 
-  } catch (error) {
+if (require.main === module) {
+  main().catch((error) => {
     console.error(JSON.stringify({
       timestamp: new Date().toISOString(),
       level: 'error',
@@ -37,25 +27,9 @@ async function main(): Promise<void> {
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined
     }));
-    
-    process.exit(1);
-  }
-}
-
-// Start the application if this file is run directly
-if (require.main === module) {
-  main().catch((error) => {
-    console.error(JSON.stringify({
-      timestamp: new Date().toISOString(),
-      level: 'error',
-      type: 'main_error',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    }));
     process.exit(1);
   });
 }
 
-// Export for testing
 export { MCPServer } from './server';
 export { loadConfig } from './config/server-config';

@@ -71,6 +71,14 @@ export class SchemaValidator {
           this.validateValue(value[propName], propSchema as JSONSchema7, propPath, errors);
         }
       }
+
+      if (schema.additionalProperties === false) {
+        for (const propName of Object.keys(value)) {
+          if (!(propName in schema.properties)) {
+            errors.push(`${path || 'root'}: Unknown property '${propName}'`);
+          }
+        }
+      }
     }
 
     // Array validation
@@ -151,13 +159,3 @@ export function validateToolParams(params: any, schema: JSONSchema7): void {
   }
 }
 
-/**
- * Create a validation error for MCP responses
- */
-export function createValidationError(message: string, details?: any): MCPError {
-  return {
-    code: MCPErrorCode.INVALID_PARAMS,
-    message,
-    data: details
-  };
-}

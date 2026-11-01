@@ -1,5 +1,5 @@
 # HTTPS-enabled Docker image for MCP Server
-FROM node:18-alpine
+FROM node:24-alpine
 
 # Install OpenSSL for certificate generation and wget for health checks
 RUN apk add --no-cache openssl wget
@@ -11,7 +11,7 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copy source code
 COPY . .

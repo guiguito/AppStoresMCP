@@ -2,18 +2,19 @@
  * Tests for response filtering utilities
  */
 
-import { filterAppData, filterReviewData, getFilterSummary } from '../../../src/utils/response-filter';
+import { filterAppData, filterReviewData } from '../../../src/utils/response-filter';
 
 describe('Response Filter Utils', () => {
   const mockAppData = {
-    id: 'com.example.app',
+    // Shape of an App Store lookup result
+    id: 553834731,
     appId: 'com.example.app',
     title: 'Example App',
     url: 'https://example.com',
     price: 0,
-    rating: 4.5,
-    ratingsCount: 1000,
-    category: 'PRODUCTIVITY',
+    score: 4.5,
+    reviews: 1000,
+    primaryGenre: 'Productivity',
     developer: 'Example Developer',
     developerId: 'example-dev',
     icon: 'https://example.com/icon.png',
@@ -24,8 +25,7 @@ describe('Response Filter Utils', () => {
     descriptionHTML: '<p>HTML description</p>',
     releaseNotes: 'Latest release notes',
     screenshots: ['screenshot1.png', 'screenshot2.png'],
-    permissions: ['CAMERA', 'LOCATION'],
-    reviews: [{ text: 'Great app!' }]
+    genres: ['Productivity', 'Business']
   };
 
   describe('filterAppData', () => {
@@ -38,9 +38,11 @@ describe('Response Filter Utils', () => {
       const result = filterAppData(mockAppData, false);
       
       // Should keep essential fields
-      expect(result.id).toBe('com.example.app');
+      expect(result.id).toBe(553834731);
       expect(result.title).toBe('Example App');
-      expect(result.rating).toBe(4.5);
+      expect(result.score).toBe(4.5);
+      expect(result.reviews).toBe(1000);
+      expect(result.primaryGenre).toBe('Productivity');
       expect(result.developer).toBe('Example Developer');
       
       // Should remove verbose fields
@@ -49,12 +51,11 @@ describe('Response Filter Utils', () => {
       expect(result.descriptionHTML).toBeUndefined();
       expect(result.releaseNotes).toBeUndefined();
       expect(result.screenshots).toBeUndefined();
-      expect(result.permissions).toBeUndefined();
-      expect(result.reviews).toBeUndefined();
+      expect(result.genres).toBeUndefined();
     });
 
     it('should handle arrays of app data', () => {
-      const appArray = [mockAppData, { ...mockAppData, id: 'com.example.app2' }];
+      const appArray = [mockAppData, { ...mockAppData, id: 2 }];
       const result = filterAppData(appArray, false);
       
       expect(Array.isArray(result)).toBe(true);
@@ -168,18 +169,6 @@ describe('Response Filter Utils', () => {
       const result = filterReviewData([mockAppStoreReview], undefined, 'app-store');
       expect(result[0].url).toBeUndefined();
       expect(result[0].userName).toBe('TestUser');
-    });
-  });
-
-  describe('getFilterSummary', () => {
-    it('should generate correct summary message', () => {
-      const summary = getFilterSummary(20, 12);
-      expect(summary).toBe('Filtered response: kept 12 essential fields, removed 8 verbose fields to reduce token usage');
-    });
-
-    it('should handle zero removed fields', () => {
-      const summary = getFilterSummary(10, 10);
-      expect(summary).toBe('Filtered response: kept 10 essential fields, removed 0 verbose fields to reduce token usage');
     });
   });
 });

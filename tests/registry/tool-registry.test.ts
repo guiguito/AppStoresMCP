@@ -28,7 +28,7 @@ describe('ToolRegistry', () => {
   describe('registerTool', () => {
     it('should register a valid tool', () => {
       expect(() => registry.registerTool(mockTool)).not.toThrow();
-      expect(registry.hasTool('test-tool')).toBe(true);
+      expect(registry.getTool('test-tool')).toBe(mockTool);
       expect(registry.size()).toBe(1);
     });
 
@@ -79,17 +79,6 @@ describe('ToolRegistry', () => {
     it('should return undefined for non-existent tool', () => {
       const retrievedTool = registry.getTool('non-existent');
       expect(retrievedTool).toBeUndefined();
-    });
-  });
-
-  describe('hasTool', () => {
-    it('should return true for registered tool', () => {
-      registry.registerTool(mockTool);
-      expect(registry.hasTool('test-tool')).toBe(true);
-    });
-
-    it('should return false for non-existent tool', () => {
-      expect(registry.hasTool('non-existent')).toBe(false);
     });
   });
 
@@ -151,43 +140,6 @@ describe('ToolRegistry', () => {
 
       const names = registry.getToolNames();
       expect(names).toEqual(['test-tool', 'tool-2']);
-    });
-  });
-
-  describe('unregisterTool', () => {
-    it('should remove registered tool', () => {
-      registry.registerTool(mockTool);
-      expect(registry.hasTool('test-tool')).toBe(true);
-      
-      const removed = registry.unregisterTool('test-tool');
-      expect(removed).toBe(true);
-      expect(registry.hasTool('test-tool')).toBe(false);
-      expect(registry.size()).toBe(0);
-    });
-
-    it('should return false for non-existent tool', () => {
-      const removed = registry.unregisterTool('non-existent');
-      expect(removed).toBe(false);
-    });
-  });
-
-  describe('clear', () => {
-    it('should remove all registered tools', () => {
-      const tool2: MCPTool = {
-        name: 'tool-2',
-        description: 'Second tool',
-        inputSchema: { type: 'object' },
-        execute: jest.fn()
-      };
-
-      registry.registerTool(mockTool);
-      registry.registerTool(tool2);
-      expect(registry.size()).toBe(2);
-
-      registry.clear();
-      expect(registry.size()).toBe(0);
-      expect(registry.hasTool('test-tool')).toBe(false);
-      expect(registry.hasTool('tool-2')).toBe(false);
     });
   });
 

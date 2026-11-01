@@ -7,7 +7,6 @@ A comprehensive Node.js TypeScript MCP (Model Context Protocol) server that prov
 ## Features
 
 - **Dual Transport Support**: Implements both MCP Streamable HTTP and SSE (Server-Sent Events) transport protocols
-- **Fixed SSE Transport**: SSE transport now includes automatic MCP initialization to prevent client timeout issues
 - **Comprehensive Coverage**: 19 MCP tools covering all available functionality from both app store scraping libraries
 - **Response Filtering**: Automatic filtering of verbose fields (descriptions, summaries) to reduce token usage by up to 93%
 - **Raw Data Models**: Returns complete, unmodified responses from underlying scraping libraries (when fullDetail=true)
@@ -15,15 +14,14 @@ A comprehensive Node.js TypeScript MCP (Model Context Protocol) server that prov
 - **TypeScript**: Full type safety and modern JavaScript features
 - **Docker Ready**: Containerized deployment with multi-stage builds
 - **Production Ready**: Comprehensive error handling, logging, and health checks
-- **Rate Limiting**: Built-in protection against API abuse
 - **Configurable**: Environment-based configuration management
-- **Legacy Compatibility**: SSE transport for older MCP clients with automatic initialization
+- **Legacy Compatibility**: Standard MCP HTTP+SSE transport (protocol 2024-11-05) for older MCP clients
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 20.18+
 - npm or yarn
 - Docker (optional, for containerized deployment)
 
@@ -73,8 +71,8 @@ The server exposes 19 comprehensive MCP tools for complete app store data access
 
 1. **`google-play-app-details`** - Get detailed app information including metadata, ratings, and descriptions
 2. **`google-play-app-reviews`** - Fetch app reviews with pagination and sorting options
-3. **`google-play-search`** - Search for apps (up to 100 results per request, no pagination)
-4. **`google-play-list`** - Get app lists from collections (TOP_FREE, TOP_PAID, NEW_FREE, etc.) and categories (up to 100 results per request, no pagination)
+3. **`google-play-search`** - Search for apps (up to 30 results; Play serves no more per query)
+4. **`google-play-list`** - Get app lists from collections (TOP_FREE, TOP_PAID, GROSSING) and categories (up to 500 results)
 5. **`google-play-developer`** - Get all apps by a specific developer with pagination
 6. **`google-play-suggest`** - Get search suggestions for app discovery
 7. **`google-play-similar`** - Find apps similar to a given app
@@ -86,8 +84,8 @@ The server exposes 19 comprehensive MCP tools for complete app store data access
 
 1. **`app-store-app-details`** - Get detailed app information including metadata, ratings, and descriptions
 2. **`app-store-app-reviews`** - Fetch app reviews with pagination and sorting options
-3. **`app-store-search`** - Search for apps (up to 100 results per request, no pagination)
-4. **`app-store-list`** - Get app lists from collections and categories (up to 100 results per request, no pagination)
+3. **`app-store-search`** - Search for apps (paginated via `page`)
+4. **`app-store-list`** - Get app lists from collections and categories (up to 200 results)
 5. **`app-store-developer`** - Get all apps by a specific developer
 6. **`app-store-privacy`** - Get detailed app privacy information and policies
 7. **`app-store-suggest`** - Get search suggestions for app discovery
@@ -240,29 +238,19 @@ The server can be configured using environment variables:
 
 ### Core Settings
 - `PORT` - Server port (default: 3000)
-- `LOG_LEVEL` - Logging level: debug, info, warn, error (default: info)
 - `NODE_ENV` - Environment: development, production, test (default: development)
 
-### Rate Limiting
-- `RATE_LIMIT_WINDOW_MS` - Rate limit window in milliseconds (default: 900000 - 15 minutes)
-- `RATE_LIMIT_MAX_REQUESTS` - Max requests per window (default: 100)
-
-### Scraping Configuration
-- `SCRAPING_TIMEOUT` - Request timeout in milliseconds (default: 30000)
-- `SCRAPING_RETRIES` - Number of retry attempts (default: 3)
-
 ### Transport Configuration
-- `ENABLE_HTTP_TRANSPORT` - Enable HTTP transport (default: true)
 - `ENABLE_SSE_TRANSPORT` - Enable SSE transport (default: true)
 - `SSE_HEARTBEAT_INTERVAL` - SSE heartbeat interval in milliseconds (default: 30000)
-- `SSE_CONNECTION_TIMEOUT` - SSE connection timeout in milliseconds (default: 300000)
 - `SSE_MAX_CONNECTIONS` - Maximum concurrent SSE connections (default: 100)
-- `SSE_AUTO_INITIALIZE` - Enable automatic MCP initialization for SSE connections (default: true)
-- `SSE_INITIALIZATION_TIMEOUT` - SSE initialization timeout in milliseconds (default: 5000)
 
 ### CORS and Security
-- `CORS_ORIGINS` - Allowed CORS origins, comma-separated (default: *)
-- `REQUEST_TIMEOUT` - HTTP request timeout in milliseconds (default: 60000)
+- `CORS_ORIGINS` - Allowed browser origins, comma-separated, or `*` for any. Default: none — no CORS headers are sent and any request carrying an `Origin` header that is not listed is rejected with 403 on `/mcp` and `/sse`. Requests without an `Origin` header (CLI/desktop MCP clients) are always accepted.
+- `RATE_LIMIT_MAX_REQUESTS` - Max requests per client IP per window on `/mcp` and `/sse` (default: `100`, `0` disables). Over the limit: HTTP 429 with a JSON-RPC error.
+- `RATE_LIMIT_WINDOW_MS` - Rate limit window in ms (default: `60000`)
+- `TRUST_PROXY` - Express `trust proxy` value (e.g. `1` for one reverse proxy hop). Set it behind a proxy/load balancer, otherwise every client shares the proxy's IP and therefore one rate-limit bucket.
+- `REQUEST_TIMEOUT` - `/mcp` request timeout in milliseconds; slower requests get HTTP 408 (default: 60000)
 - `ENABLE_LOGGING` - Enable request logging (default: true)
 
 ### HTTPS Configuration
@@ -283,11 +271,6 @@ The server can be configured using environment variables:
 Create a `.env` file:
 ```env
 PORT=3000
-LOG_LEVEL=info
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-SCRAPING_TIMEOUT=30000
-SCRAPING_RETRIES=3
 CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
 
 # HTTPS Configuration (optional)
@@ -402,7 +385,7 @@ tests/
 
 ### HTTP Transport (Recommended)
 
-The HTTP transport uses MCP Streamable HTTP protocol for modern MCP clients:
+The HTTP transport uses the MCP Streamable HTTP protocol (JSON responses, no streaming) for modern MCP clients:
 
 ```bash
 # MCP endpoint
@@ -412,94 +395,37 @@ POST http://localhost:3000/mcp
 GET http://localhost:3000/health
 ```
 
-### SSE Transport (Enhanced Compatibility)
+- Requests get HTTP 200 with a JSON-RPC response — including JSON-RPC errors (e.g. `-32601` unknown method, `-32602` unknown tool).
+- Notifications (messages without `id`, e.g. `notifications/initialized`) get `202 Accepted` with an empty body.
+- Tool failures (invalid arguments, upstream store errors) are returned as a normal result with `isError: true` and the error message in `content[0].text`.
+- Unparseable JSON or an invalid JSON-RPC envelope gets HTTP 400; request bodies are limited to 1 MB.
+- `initialize` supports protocol versions `2025-03-26` and `2024-11-05` (the client's version is echoed when supported).
 
-The SSE transport provides compatibility with MCP clients and includes **automatic MCP initialization** with enhanced client compatibility features:
+### SSE Transport (Legacy)
+
+Standard MCP HTTP+SSE transport (protocol 2024-11-05), as implemented by the official SDKs' `SSEClientTransport`:
 
 ```bash
-# Establish SSE connection
+# 1. Open the event stream; the first event is `endpoint`
 GET http://localhost:3000/sse
+#   event: endpoint
+#   data: /sse/<connectionId>/message
 
-# Send MCP messages to specific connection
-POST http://localhost:3000/sse/{connectionId}/message
+# 2. POST JSON-RPC messages to that endpoint → 202 Accepted
+POST http://localhost:3000/sse/<connectionId>/message
+
+# 3. Responses arrive on the stream
+#   event: message
+#   data: {"jsonrpc":"2.0","id":1,"result":{...}}
 ```
 
-#### Key Features
-
-- **Automatic Initialization**: Server automatically sends MCP initialization messages upon connection
-- **Timeout Prevention**: Eliminates client timeout issues during handshake
-- **Standard MCP Compatibility**: Works with existing MCP client libraries without modifications
-- **Request Queuing**: Queues incoming requests until initialization completes
-- **Comprehensive Logging**: Detailed logging for troubleshooting connection issues
-
-#### SSE Connection Example
-
-```javascript
-// Establish SSE connection
-const eventSource = new EventSource('http://localhost:3000/sse');
-
-eventSource.onopen = function(event) {
-  console.log('SSE connection established');
-};
-
-eventSource.addEventListener('connection', function(event) {
-  const data = JSON.parse(event.data);
-  console.log('Connection ID:', data.connectionId);
-  window.sseConnectionId = data.connectionId;
-});
-
-// Handle automatic initialization response
-eventSource.addEventListener('mcp-response', function(event) {
-  const response = JSON.parse(event.data);
-  
-  if (response.result && response.result.serverInfo) {
-    console.log('MCP initialization complete:', response.result.serverInfo);
-    console.log('Server capabilities:', response.result.capabilities);
-    
-    // Now ready to send MCP requests
-    sendToolRequest();
-  } else {
-    console.log('MCP Response:', response);
-  }
-});
-
-eventSource.addEventListener('heartbeat', function(event) {
-  const data = JSON.parse(event.data);
-  console.log('Heartbeat received:', data.timestamp);
-});
-
-// Send MCP request after initialization
-function sendToolRequest() {
-  fetch(`http://localhost:3000/sse/${window.sseConnectionId}/message`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: '1',
-      method: 'tools/call',
-      params: {
-        name: 'google-play-app-details',
-        arguments: { appId: 'com.whatsapp' }
-      }
-    })
-  });
-}
-```
-
-#### SSE Configuration Options
-
-The SSE transport can be configured with the following environment variables:
+The client performs the usual `initialize` / `notifications/initialized` handshake. Notifications get no response; an unknown connection id gets 404; a `: heartbeat` comment line is sent every `SSE_HEARTBEAT_INTERVAL` ms. See [examples/sse-client-example.js](./examples/sse-client-example.js).
 
 ```bash
-# SSE Transport Configuration
-SSE_AUTO_INITIALIZE=true              # Enable automatic initialization (default: true)
-SSE_INITIALIZATION_TIMEOUT=5000       # Initialization timeout in ms (default: 5000)
-SSE_HEARTBEAT_INTERVAL=30000          # Heartbeat interval in ms (default: 30000)
-SSE_CONNECTION_TIMEOUT=300000         # Connection timeout in ms (default: 300000)
-SSE_MAX_CONNECTIONS=100               # Maximum concurrent connections (default: 100)
+ENABLE_SSE_TRANSPORT=true      # default: true
+SSE_HEARTBEAT_INTERVAL=30000   # default: 30000
+SSE_MAX_CONNECTIONS=100        # default: 100 (further connections get 503)
 ```
-
-
 
 ## MCP Client Setup
 

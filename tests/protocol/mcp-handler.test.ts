@@ -1,322 +1,110 @@
 /**
- * Unit tests for MCPHandler
+ * Tests for MCPHandler: routing, initialize negotiation, notifications and tool-call error mapping
  */
 
-import { MCPHandler } from '../../src/protocol/mcp-handler';
+import { MCPHandler, isValidMCPRequest } from '../../src/protocol/mcp-handler';
 import { ToolRegistry } from '../../src/registry/tool-registry';
-import { MCPRequest, MCPTool, MCPErrorCode } from '../../src/types/mcp';
+import { MCPTool, MCPErrorCode } from '../../src/types/mcp';
 
 describe('MCPHandler', () => {
   let handler: MCPHandler;
-  let registry: ToolRegistry;
-  let mockTool: MCPTool;
+  let tool: MCPTool & { execute: jest.Mock };
 
   beforeEach(() => {
-    registry = new ToolRegistry();
-    handler = new MCPHandler(registry);
-    
-    mockTool = {
-      name: 'test-tool',
-      description: 'A test tool',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          param1: { type: 'string' }
-        },
-        required: ['param1']
-      },
-      execute: jest.fn().mockResolvedValue('test result')
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const registry = new ToolRegistry();
+    tool = {
+      name: 'echo',
+      description: 'Echo tool',
+      inputSchema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] },
+      execute: jest.fn(async (args: any) => ({ echoed: args.text }))
     };
+    registry.registerTool(tool);
+    handler = new MCPHandler(registry);
   });
 
-  describe('handleRequest', () => {
-    it('should handle valid requests', async () => {
-      const request: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/list'
-      };
+  afterEach(() => jest.restoreAllMocks());
 
-      const response = await handler.handleRequest(request);
-      expect(response.jsonrpc).toBe('2.0');
-      expect(response.id).toBe(1);
-      expect(response.result).toBeDefined();
+  describe('initialize', () => {
+    it('echoes a supported protocol version', async () => {
+      const res = await handler.handleRequest({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2024-11-05' } });
+      expect(res!.result.protocolVersion).toBe('2024-11-05');
+      expect(res!.result.capabilities).toEqual({ tools: {} });
     });
 
-    it('should return error for invalid request format', async () => {
-      const invalidRequest = {
-        jsonrpc: '1.0', // Invalid version
-        id: 1,
-        method: 'tools/list'
-      } as any;
-
-      const response = await handler.handleRequest(invalidRequest);
-      expect(response.error).toBeDefined();
-      expect(response.error!.code).toBe(MCPErrorCode.INVALID_PARAMS);
-      expect(response.error!.message).toBe('Invalid request format');
-    });
-
-    it('should return error for missing jsonrpc', async () => {
-      const invalidRequest = {
-        id: 1,
-        method: 'tools/list'
-      } as any;
-
-      const response = await handler.handleRequest(invalidRequest);
-      expect(response.error).toBeDefined();
-      expect(response.error!.code).toBe(MCPErrorCode.INVALID_PARAMS);
-    });
-
-    it('should handle missing id (notifications)', async () => {
-      const notificationRequest = {
-        jsonrpc: '2.0',
-        method: 'tools/list'
-      } as any;
-
-      const response = await handler.handleRequest(notificationRequest);
-      // Notifications without id should be handled successfully
-      expect(response.result).toBeDefined();
-      expect(response.id).toBe(undefined); // Notifications don't have id in response
-    });
-
-    it('should return error for missing method', async () => {
-      const invalidRequest = {
-        jsonrpc: '2.0',
-        id: 1
-      } as any;
-
-      const response = await handler.handleRequest(invalidRequest);
-      expect(response.error).toBeDefined();
-      expect(response.error!.code).toBe(MCPErrorCode.INVALID_PARAMS);
-    });
-
-    it('should return error for unknown method', async () => {
-      const request: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'unknown/method'
-      };
-
-      const response = await handler.handleRequest(request);
-      expect(response.error).toBeDefined();
-      expect(response.error!.code).toBe(MCPErrorCode.METHOD_NOT_FOUND);
-      expect(response.error!.message).toBe("Method 'unknown/method' not found");
-    });
-
-    it('should handle internal errors gracefully', async () => {
-      // Mock registry to throw an error
-      const mockRegistry = {
-        getToolsList: jest.fn().mockImplementation(() => {
-          throw new Error('Internal error');
-        })
-      } as any;
-      
-      const errorHandler = new MCPHandler(mockRegistry);
-      const request: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/list'
-      };
-
-      const response = await errorHandler.handleRequest(request);
-      expect(response.error).toBeDefined();
-      expect(response.error!.code).toBe(MCPErrorCode.INTERNAL_ERROR);
+    it('answers with the latest version when the requested one is unsupported', async () => {
+      const res = await handler.handleRequest({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '1999-01-01' } });
+      expect(res!.result.protocolVersion).toBe('2025-03-26');
     });
   });
 
-  describe('tools/list method', () => {
-    it('should return empty tools list when no tools registered', async () => {
-      const request: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/list'
-      };
-
-      const response = await handler.handleRequest(request);
-      expect(response.result).toEqual({ tools: [] });
-    });
-
-    it('should return list of registered tools', async () => {
-      registry.registerTool(mockTool);
-      
-      const request: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/list'
-      };
-
-      const response = await handler.handleRequest(request);
-      expect(response.result).toEqual({
-        tools: [{
-          name: 'test-tool',
-          description: 'A test tool',
-          inputSchema: mockTool.inputSchema
-        }]
-      });
-    });
+  it('returns nothing for notifications, known or unknown', async () => {
+    expect(await handler.handleRequest({ jsonrpc: '2.0', method: 'notifications/initialized' })).toBeUndefined();
+    expect(await handler.handleRequest({ jsonrpc: '2.0', method: 'notifications/cancelled', params: { requestId: 1 } })).toBeUndefined();
   });
 
-  describe('tools/call method', () => {
-    beforeEach(() => {
-      registry.registerTool(mockTool);
+  it('answers ping', async () => {
+    expect(await handler.handleRequest({ jsonrpc: '2.0', id: 'p', method: 'ping' })).toEqual({ jsonrpc: '2.0', id: 'p', result: {} });
+  });
+
+  it('lists tools', async () => {
+    const res = await handler.handleRequest({ jsonrpc: '2.0', id: 2, method: 'tools/list' });
+    expect(res!.result.tools).toEqual([{ name: 'echo', description: 'Echo tool', inputSchema: tool.inputSchema }]);
+  });
+
+  it('returns -32601 for unknown methods', async () => {
+    const res = await handler.handleRequest({ jsonrpc: '2.0', id: 3, method: 'resources/list' });
+    expect(res!.error!.code).toBe(MCPErrorCode.METHOD_NOT_FOUND);
+    expect(res!.id).toBe(3);
+  });
+
+  describe('tools/call', () => {
+    it('returns the tool result as text content', async () => {
+      const res = await handler.handleRequest({ jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'echo', arguments: { text: 'hi' } } });
+      expect(res!.error).toBeUndefined();
+      expect(res!.result.isError).toBeUndefined();
+      expect(JSON.parse(res!.result.content[0].text)).toEqual({ echoed: 'hi' });
     });
 
-    it('should execute tool with valid parameters', async () => {
-      const request: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/call',
-        params: {
-          name: 'test-tool',
-          arguments: { param1: 'test value' }
-        }
-      };
-
-      const response = await handler.handleRequest(request);
-      expect(response.result).toBeDefined();
-      expect(response.result.content).toEqual([{
-        type: 'text',
-        text: 'test result'
-      }]);
-      expect(mockTool.execute).toHaveBeenCalledWith({ param1: 'test value' });
+    it('serialises an undefined result instead of failing', async () => {
+      tool.execute.mockResolvedValueOnce(undefined);
+      const res = await handler.handleRequest({ jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'echo', arguments: { text: 'hi' } } });
+      expect(res!.result).toEqual({ content: [{ type: 'text', text: 'null' }] });
     });
 
-    it('should handle object results by stringifying', async () => {
-      const objectResult = { data: 'test', count: 42 };
-      (mockTool.execute as jest.Mock).mockResolvedValue(objectResult);
-
-      const request: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/call',
-        params: {
-          name: 'test-tool',
-          arguments: { param1: 'test value' }
-        }
-      };
-
-      const response = await handler.handleRequest(request);
-      expect(response.result.content[0].text).toBe(JSON.stringify(objectResult, null, 2));
+    it('returns -32602 for an unknown tool', async () => {
+      const res = await handler.handleRequest({ jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'nope' } });
+      expect(res!.error!.code).toBe(MCPErrorCode.INVALID_PARAMS);
     });
 
-    it('should return error for missing parameters', async () => {
-      const request: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/call'
-      };
-
-      const response = await handler.handleRequest(request);
-      expect(response.error).toBeDefined();
-      expect(response.error!.code).toBe(MCPErrorCode.INVALID_PARAMS);
-      expect(response.error!.message).toBe('Tool call requires parameters object');
+    it('returns isError with validation details for bad arguments, without calling the tool', async () => {
+      const res = await handler.handleRequest({ jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'echo', arguments: {} } });
+      expect(res!.error).toBeUndefined();
+      expect(res!.result.isError).toBe(true);
+      expect(res!.result.content[0].text).toMatch(/text/);
+      expect(tool.execute).not.toHaveBeenCalled();
     });
 
-    it('should return error for missing tool name', async () => {
-      const request: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/call',
-        params: {
-          arguments: { param1: 'test value' }
-        }
-      };
-
-      const response = await handler.handleRequest(request);
-      expect(response.error).toBeDefined();
-      expect(response.error!.code).toBe(MCPErrorCode.INVALID_PARAMS);
-      expect(response.error!.message).toBe('Tool name is required and must be a string');
+    it('returns isError when the tool throws, calling it once (no retries)', async () => {
+      tool.execute.mockRejectedValueOnce(new Error('upstream 429'));
+      const res = await handler.handleRequest({ jsonrpc: '2.0', id: 8, method: 'tools/call', params: { name: 'echo', arguments: { text: 'x' } } });
+      expect(res!.result).toEqual({ content: [{ type: 'text', text: 'upstream 429' }], isError: true });
+      expect(tool.execute).toHaveBeenCalledTimes(1);
     });
+  });
+});
 
-    it('should return error for non-existent tool', async () => {
-      const request: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/call',
-        params: {
-          name: 'non-existent-tool',
-          arguments: { param1: 'test value' }
-        }
-      };
+describe('isValidMCPRequest', () => {
+  it('accepts requests and notifications', () => {
+    expect(isValidMCPRequest({ jsonrpc: '2.0', id: 1, method: 'x' })).toBe(true);
+    expect(isValidMCPRequest({ jsonrpc: '2.0', method: 'x' })).toBe(true);
+  });
 
-      const response = await handler.handleRequest(request);
-      expect(response.error).toBeDefined();
-      expect(response.error!.code).toBe(MCPErrorCode.METHOD_NOT_FOUND);
-      expect(response.error!.message).toBe("Tool 'non-existent-tool' not found");
-    });
-
-    it('should return error for invalid parameters', async () => {
-      const request: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/call',
-        params: {
-          name: 'test-tool',
-          arguments: { param1: 123 } // Should be string
-        }
-      };
-
-      const response = await handler.handleRequest(request);
-      expect(response.error).toBeDefined();
-      expect(response.error!.code).toBe(MCPErrorCode.INVALID_PARAMS);
-    });
-
-    it('should return error for missing required parameters', async () => {
-      const request: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/call',
-        params: {
-          name: 'test-tool',
-          arguments: {} // Missing required param1
-        }
-      };
-
-      const response = await handler.handleRequest(request);
-      expect(response.error).toBeDefined();
-      expect(response.error!.code).toBe(MCPErrorCode.INVALID_PARAMS);
-    });
-
-    it('should handle tool execution errors', async () => {
-      (mockTool.execute as jest.Mock).mockRejectedValue(new Error('Tool execution failed'));
-
-      const request: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/call',
-        params: {
-          name: 'test-tool',
-          arguments: { param1: 'test value' }
-        }
-      };
-
-      const response = await handler.handleRequest(request);
-      expect(response.error).toBeDefined();
-      expect(response.error!.code).toBe(MCPErrorCode.INTERNAL_ERROR);
-      expect(response.error!.message).toBe('Tool execution failed');
-    });
-
-    it('should execute tool with empty arguments when none provided', async () => {
-      const simpleTool: MCPTool = {
-        name: 'simple-tool',
-        description: 'Simple tool',
-        inputSchema: { type: 'object' },
-        execute: jest.fn().mockResolvedValue('simple result')
-      };
-      registry.registerTool(simpleTool);
-
-      const request: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/call',
-        params: {
-          name: 'simple-tool'
-        }
-      };
-
-      const response = await handler.handleRequest(request);
-      expect(response.result).toBeDefined();
-      expect(simpleTool.execute).toHaveBeenCalledWith({});
-    });
+  it('rejects malformed envelopes', () => {
+    expect(isValidMCPRequest(null)).toBe(false);
+    expect(isValidMCPRequest([])).toBe(false);
+    expect(isValidMCPRequest({ jsonrpc: '1.0', id: 1, method: 'x' })).toBe(false);
+    expect(isValidMCPRequest({ jsonrpc: '2.0', id: 1 })).toBe(false);
+    expect(isValidMCPRequest({ jsonrpc: '2.0', id: {}, method: 'x' })).toBe(false);
   });
 });
