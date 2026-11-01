@@ -2,14 +2,14 @@
  * Google Play Store List MCP Tool
  */
 
-import gplay from 'google-play-scraper-ts';
+import gplay, { type ListOptions } from 'google-play-scraper-ts';
 import { JSONSchema7 } from 'json-schema';
 import { MCPTool } from '../types/mcp';
 import { country, fullDetail, lang } from './common';
 
 interface GooglePlayListParams {
-  collection?: string;
-  category?: string;
+  collection?: ListOptions['collection'];
+  category?: ListOptions['category'];
   age?: string;
   num?: number;
   lang?: string;
@@ -67,12 +67,13 @@ export class GooglePlayListTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: GooglePlayListParams = {}): Promise<any> {
+  async execute(params: GooglePlayListParams = {}): Promise<unknown> {
     const ages = gplay.age as Record<string, string>;
     return gplay.list({
-      collection: (params.collection || gplay.collection.TOP_FREE) as any,
-      ...(params.category ? { category: params.category as any } : {}),
-      ...(params.age ? { age: (ages[params.age] || params.age) as any } : {}),
+      collection: params.collection || gplay.collection.TOP_FREE,
+      ...(params.category ? { category: params.category } : {}),
+      // ponytail: the schema enum limits age to the library's keys or values, so the lookup is total
+      ...(params.age ? { age: (ages[params.age] || params.age) as NonNullable<ListOptions['age']> } : {}),
       num: params.num || 50,
       lang: params.lang || 'en',
       country: params.country || 'us',

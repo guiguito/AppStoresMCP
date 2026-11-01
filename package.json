@@ -14,7 +14,7 @@
     "test:integration": "jest --testPathPatterns=integration --runInBand --detectOpenHandles",
     "test:integration:docker": "docker compose -f docker/docker-compose.integration.yml run --rm --build live-check",
     "test:integration:local": "NODE_ENV=test npm run test:integration",
-    "lint": "eslint src",
+    "lint": "eslint src scripts tools examples",
     "clean": "rm -rf dist",
     "generate-ssl": "./scripts/generate-ssl-certs.sh",
     "test:live": "npm run build && node scripts/live-check.js"

@@ -42,7 +42,7 @@ export class GooglePlaySearchTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: GooglePlaySearchParams): Promise<any> {
+  async execute(params: GooglePlaySearchParams): Promise<unknown> {
     return gplay.search({
       term: params.query,
       num: params.num || 30,

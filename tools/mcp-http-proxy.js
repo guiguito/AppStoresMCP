@@ -13,7 +13,7 @@ const https = require('https');
 class MCPHttpProxy {
   constructor(serverUrl = process.env.MCP_SERVER_URL || 'http://localhost:3000/mcp') {
     this.serverUrl = serverUrl;
-    this.requestId = 1;
+    this.pending = new Set();
     
     // Log startup with SSL configuration
     const isHttps = this.serverUrl.startsWith('https:');
@@ -56,14 +56,15 @@ class MCPHttpProxy {
         buffer = lines.pop() || ''; // Keep incomplete line in buffer
         
         for (const line of lines) {
-          if (line.trim()) {
-            this.handleStdinLine(line.trim());
-          }
+          this.dispatch(line);
         }
       }
     });
 
-    process.stdin.on('end', () => {
+    process.stdin.on('end', async () => {
+      // Handle a final line without a trailing newline, then let in-flight requests answer before exiting
+      this.dispatch(buffer);
+      await Promise.allSettled([...this.pending]);
       this.log('info', 'stdin closed, exiting');
       process.exit(0);
     });
@@ -88,9 +89,19 @@ class MCPHttpProxy {
     this.log('info', 'MCP HTTP Proxy ready for requests');
   }
 
+  dispatch(line) {
+    if (!line.trim()) {
+      return;
+    }
+    const task = this.handleStdinLine(line.trim());
+    this.pending.add(task);
+    task.finally(() => this.pending.delete(task));
+  }
+
   async handleStdinLine(line) {
+    let request;
     try {
-      const request = JSON.parse(line);
+      request = JSON.parse(line);
       
       this.log('debug', 'received MCP request', { 
         method: request.method, 
@@ -98,7 +109,12 @@ class MCPHttpProxy {
       });
 
       const response = await this.forwardRequest(request);
-      
+
+      // Notifications (no id) get 202 with an empty body: nothing to write back
+      if (response === null) {
+        return;
+      }
+
       this.log('debug', 'sending MCP response', { 
         id: response.id,
         hasError: !!response.error 
@@ -113,10 +129,15 @@ class MCPHttpProxy {
         line: line.substring(0, 100) 
       });
 
+      // JSON-RPC: never answer a notification, not even with an error
+      if (request && request.id === undefined) {
+        return;
+      }
+
       // Send error response
       const errorResponse = {
         jsonrpc: '2.0',
-        id: null,
+        id: request && request.id !== undefined ? request.id : null,
         error: {
           code: -32603,
           message: 'Internal error',
@@ -158,6 +179,10 @@ class MCPHttpProxy {
         });
         
         res.on('end', () => {
+          if (res.statusCode === 202 || data.trim() === '') {
+            resolve(null);
+            return;
+          }
           try {
             const response = JSON.parse(data);
             resolve(response);

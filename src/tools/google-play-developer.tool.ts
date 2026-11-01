@@ -42,7 +42,7 @@ export class GooglePlayDeveloperTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: GooglePlayDeveloperParams): Promise<any> {
+  async execute(params: GooglePlayDeveloperParams): Promise<unknown> {
     return gplay.developer({
       devId: params.devId,
       lang: params.lang || 'en',

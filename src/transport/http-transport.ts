@@ -157,7 +157,7 @@ export class HTTPTransportHandler {
 
   // Express only treats 4-argument middleware as an error handler, so `_next` must stay
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private errorHandler: ErrorRequestHandler = (error: any, _req: Request, res: Response, _next: NextFunction): void => {
+  private errorHandler: ErrorRequestHandler = (error: { status?: number; statusCode?: number; type?: string; message?: string }, _req: Request, res: Response, _next: NextFunction): void => {
     const status: number = error.status || error.statusCode || 500;
     if (status >= 500) {
       logError('unhandled_error', error);
@@ -168,7 +168,7 @@ export class HTTPTransportHandler {
     if (error.type === 'entity.parse.failed') {
       res.status(400).json(errorResponse(null, MCPErrorCode.PARSE_ERROR, 'Parse error'));
     } else if (status < 500) {
-      res.status(status).json(errorResponse(null, MCPErrorCode.INVALID_REQUEST, error.message));
+      res.status(status).json(errorResponse(null, MCPErrorCode.INVALID_REQUEST, error.message || 'Bad request'));
     } else {
       res.status(500).json(errorResponse(null, MCPErrorCode.INTERNAL_ERROR, 'Internal server error'));
     }

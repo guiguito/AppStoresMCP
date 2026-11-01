@@ -28,7 +28,7 @@ export class AppStoreSimilarTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: AppStoreSimilarParams): Promise<any> {
+  async execute(params: AppStoreSimilarParams): Promise<unknown> {
     return store.similar({
       ...appStoreIdOption(params.appId),
       country: params.country || 'us',

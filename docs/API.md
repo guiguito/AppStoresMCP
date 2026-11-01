@@ -757,509 +757,77 @@ Get the ratings histogram for an app (numeric ID only; use `app-store-app-detail
 }
 ```
 
-## SSE Transport Examples
+## SSE Transport (legacy HTTP+SSE, protocol 2024-11-05)
 
-### Establishing SSE Connection with Automatic Initialization
+Prefer Streamable HTTP (`POST /mcp`). Use SSE only for clients that still need the older transport. The official SDK supports both (see `examples/sdk-client.js`).
 
-The SSE transport now includes **automatic MCP initialization** to prevent client timeout issues. The server automatically sends an MCP initialize response immediately after connection establishment.
+1. `GET /sse` opens the stream. The first event tells you where to POST:
+   ```
+   event: endpoint
+   data: /sse/<connectionId>/message
+   ```
+2. POST JSON-RPC messages to that path. The server replies `202 Accepted` right away.
+3. Each response arrives on the stream as `event: message` with the JSON-RPC response as `data`. Notifications (no `id`) get nothing.
+4. The client sends `initialize` itself, as with any MCP transport.
+5. The stream carries `: heartbeat` comment lines every `SSE_HEARTBEAT_INTERVAL` ms.
+6. Errors:
+   - unknown or closed connection id → `404`
+   - more than `SSE_MAX_CONNECTIONS` open streams → `503`
+   - request from a browser origin not allowed by `CORS_ORIGINS` → `403`
 
 ```javascript
-// Connect to SSE endpoint
-const eventSource = new EventSource('http://localhost:3000/sse');
+const { EventSource } = require('eventsource'); // npm install eventsource (v2: require('eventsource'))
+const base = 'http://localhost:3000';
+const es = new EventSource(`${base}/sse`);
+let postUrl;
 
-let isInitialized = false;
-
-// Handle connection establishment
-eventSource.addEventListener('connection', function(event) {
-  const data = JSON.parse(event.data);
-  console.log('Connected with ID:', data.connectionId);
-  
-  // Store connection ID for sending messages
-  window.sseConnectionId = data.connectionId;
+es.addEventListener('endpoint', (e) => {
+  postUrl = base + e.data;
+  send({ jsonrpc: '2.0', id: 1, method: 'initialize',
+         params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'demo', version: '1.0.0' } } });
 });
 
-// Handle MCP responses (including automatic initialization)
-eventSource.addEventListener('mcp-response', function(event) {
-  const response = JSON.parse(event.data);
-  
-  // Check if this is the automatic initialization response
-  if (response.result && response.result.serverInfo && !isInitialized) {
-    console.log('MCP initialization complete!');
-    console.log('Server info:', response.result.serverInfo);
-    console.log('Server capabilities:', response.result.capabilities);
-    console.log('Protocol version:', response.result.protocolVersion);
-    
-    isInitialized = true;
-    
-    // Now ready to send MCP requests
-    console.log('Ready to send MCP requests');
-    
-    // Example: Discover available tools
-    discoverTools();
+es.addEventListener('message', (e) => {
+  const msg = JSON.parse(e.data);
+  if (msg.id === 1) {
+    send({ jsonrpc: '2.0', method: 'notifications/initialized' });
+    send({ jsonrpc: '2.0', id: 2, method: 'tools/list' });
   } else {
-    console.log('MCP Response:', response);
+    console.log(msg);
   }
 });
 
-// Handle heartbeats
-eventSource.addEventListener('heartbeat', function(event) {
-  const data = JSON.parse(event.data);
-  console.log('Heartbeat:', data.timestamp);
-});
-
-// Handle connection errors
-eventSource.onerror = function(event) {
-  console.error('SSE connection error:', event);
-};
-
-// Function to discover tools after initialization
-function discoverTools() {
-  if (!isInitialized) {
-    console.log('Waiting for initialization to complete...');
-    return;
-  }
-  
-  sendMCPMessage({
-    jsonrpc: '2.0',
-    id: 'discover-tools',
-    method: 'tools/list'
-  });
+function send(message) {
+  return fetch(postUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(message) });
 }
 ```
 
-### Automatic Initialization Flow
-
-The SSE transport follows this initialization sequence:
-
-1. **Connection Establishment**: Client connects to `/sse` endpoint
-2. **Connection Event**: Server sends `connection` event with connection ID
-3. **Automatic Initialization**: Server automatically creates and processes an MCP `initialize` request
-4. **Initialize Response**: Server sends `mcp-response` event with initialization result
-5. **Ready State**: Client can now send MCP requests
-
-#### Example Initialization Response
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "init-12345678-1234-1234-1234-123456789abc",
-  "result": {
-    "protocolVersion": "2025-03-26",
-    "capabilities": {
-      "tools": {},
-      "logging": {}
-    },
-    "serverInfo": {
-      "name": "app-store-mcp-server",
-      "version": "2.0.0"
-    }
-  }
-}
-```
-
-### Sending MCP Messages via SSE
-
-```javascript
-// Send MCP request via SSE transport
-async function sendMCPMessage(message) {
-  if (!window.sseConnectionId) {
-    throw new Error('SSE connection not established');
-  }
-  
-  const response = await fetch(`http://localhost:3000/sse/${window.sseConnectionId}/message`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Correlation-ID': 'unique-correlation-id'
-    },
-    body: JSON.stringify(message)
-  });
-  
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  
-  // Response will be received via SSE 'mcp-response' event
-}
-
-// Example usage after initialization
-sendMCPMessage({
-  jsonrpc: '2.0',
-  id: '1',
-  method: 'tools/call',
-  params: {
-    name: 'google-play-app-details',
-    arguments: {
-      appId: 'com.whatsapp'
-    }
-  }
-});
-```
-
-### Request Queuing During Initialization
-
-If you send requests before initialization completes, they will be automatically queued and processed after initialization:
-
-```javascript
-// This request will be queued if sent before initialization completes
-sendMCPMessage({
-  jsonrpc: '2.0',
-  id: 'early-request',
-  method: 'tools/call',
-  params: {
-    name: 'google-play-search',
-    arguments: {
-      query: 'messaging',
-      num: 5
-    }
-  }
-});
-
-// The server will process this request after initialization completes
-```
-
-### Error Handling for SSE Transport
-
-```javascript
-eventSource.addEventListener('mcp-response', function(event) {
-  const response = JSON.parse(event.data);
-  
-  if (response.error) {
-    console.error('MCP Error:', response.error);
-    
-    // Handle specific error types
-    switch (response.error.code) {
-      case -32600: // Invalid Request
-        console.error('Invalid MCP request format');
-        break;
-      case -32601: // Method Not Found
-        console.error('Tool not found:', response.error.message);
-        break;
-      case -32602: // Invalid Params
-        console.error('Invalid parameters:', response.error.message);
-        break;
-      case -32603: // Internal Error
-        console.error('Server error:', response.error.message);
-        break;
-      default:
-        console.error('Unknown error:', response.error);
-    }
-  } else if (response.result) {
-    console.log('Success:', response.result);
-  }
-});
-```
-
-### SSE Configuration Options
-
-The SSE transport behavior can be configured via environment variables:
-
-```bash
-# Enable/disable automatic initialization (default: true)
-SSE_AUTO_INITIALIZE=true
-
-# Initialization timeout in milliseconds (default: 5000)
-SSE_INITIALIZATION_TIMEOUT=5000
-
-# Heartbeat interval in milliseconds (default: 30000)
-SSE_HEARTBEAT_INTERVAL=30000
-
-# Connection timeout in milliseconds (default: 300000)
-SSE_CONNECTION_TIMEOUT=300000
-
-# Maximum concurrent connections (default: 100)
-SSE_MAX_CONNECTIONS=100
-```
-
-### Complete SSE Client Example
-
-```javascript
-class SSEMCPClient {
-  constructor(baseUrl = 'http://localhost:3000') {
-    this.baseUrl = baseUrl;
-    this.connectionId = null;
-    this.eventSource = null;
-    this.isInitialized = false;
-    this.responseHandlers = new Map();
-    this.requestQueue = [];
-  }
-
-  async connect() {
-    return new Promise((resolve, reject) => {
-      this.eventSource = new EventSource(`${this.baseUrl}/sse`);
-      
-      this.eventSource.addEventListener('connection', (event) => {
-        const data = JSON.parse(event.data);
-        this.connectionId = data.connectionId;
-        console.log('SSE connected with ID:', this.connectionId);
-      });
-
-      this.eventSource.addEventListener('mcp-response', (event) => {
-        const response = JSON.parse(event.data);
-        
-        // Handle automatic initialization
-        if (response.result && response.result.serverInfo && !this.isInitialized) {
-          console.log('MCP initialization complete');
-          this.isInitialized = true;
-          resolve(response.result);
-          
-          // Process any queued requests
-          this.processQueuedRequests();
-          return;
-        }
-        
-        // Handle regular responses
-        const handler = this.responseHandlers.get(response.id);
-        if (handler) {
-          if (response.error) {
-            handler.reject(new Error(response.error.message));
-          } else {
-            handler.resolve(response.result);
-          }
-          this.responseHandlers.delete(response.id);
-        }
-      });
-
-      this.eventSource.addEventListener('heartbeat', (event) => {
-        const data = JSON.parse(event.data);
-        console.log('Heartbeat:', data.timestamp);
-      });
-
-      this.eventSource.onerror = (error) => {
-        console.error('SSE connection error:', error);
-        reject(error);
-      };
-
-      // Timeout if initialization doesn't complete
-      setTimeout(() => {
-        if (!this.isInitialized) {
-          reject(new Error('Initialization timeout'));
-        }
-      }, 10000);
-    });
-  }
-
-  async callTool(toolName, arguments) {
-    const requestId = Date.now().toString();
-    const message = {
-      jsonrpc: '2.0',
-      id: requestId,
-      method: 'tools/call',
-      params: {
-        name: toolName,
-        arguments
-      }
-    };
-
-    // If not initialized, queue the request
-    if (!this.isInitialized) {
-      return new Promise((resolve, reject) => {
-        this.requestQueue.push({ message, resolve, reject });
-      });
-    }
-
-    return this.sendMessage(message);
-  }
-
-  async sendMessage(message) {
-    if (!this.connectionId) {
-      throw new Error('Not connected. Call connect() first.');
-    }
-
-    const responsePromise = new Promise((resolve, reject) => {
-      this.responseHandlers.set(message.id, { resolve, reject });
-      
-      // Timeout after 30 seconds
-      setTimeout(() => {
-        if (this.responseHandlers.has(message.id)) {
-          this.responseHandlers.delete(message.id);
-          reject(new Error('Request timeout'));
-        }
-      }, 30000);
-    });
-
-    // Send message
-    const response = await fetch(`${this.baseUrl}/sse/${this.connectionId}/message`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(message)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    return responsePromise;
-  }
-
-  async processQueuedRequests() {
-    const queue = [...this.requestQueue];
-    this.requestQueue = [];
-
-    for (const { message, resolve, reject } of queue) {
-      try {
-        const result = await this.sendMessage(message);
-        resolve(result);
-      } catch (error) {
-        reject(error);
-      }
-    }
-  }
-
-  disconnect() {
-    if (this.eventSource) {
-      this.eventSource.close();
-      this.eventSource = null;
-      this.connectionId = null;
-      this.isInitialized = false;
-    }
-  }
-}
-
-// Usage example
-async function main() {
-  const client = new SSEMCPClient();
-  
-  try {
-    // Connect and wait for initialization
-    const serverInfo = await client.connect();
-    console.log('Connected to server:', serverInfo.name);
-    
-    // Now ready to make requests
-    const appDetails = await client.callTool('google-play-app-details', {
-      appId: 'com.whatsapp'
-    });
-    console.log('App title:', appDetails.title);
-    
-    // List available tools
-    const tools = await client.sendMessage({
-      jsonrpc: '2.0',
-      id: 'list-tools',
-      method: 'tools/list'
-    });
-    console.log('Available tools:', tools.tools.length);
-    
-  } catch (error) {
-    console.error('Error:', error.message);
-  } finally {
-    client.disconnect();
-  }
-}
-
-main();
-```
+A complete runnable version is in `examples/sse-client-example.js`.
 
 ## Tool Discovery
 
-Get a list of all available tools:
-
-#### HTTP Request
+`tools/list` returns all enabled tools (19 unless `ENABLED_TOOLS` or `DISABLED_TOOLS` is set), each with its JSON `inputSchema`. Every schema sets `additionalProperties: false`.
 
 ```json
-{
-  "jsonrpc": "2.0",
-  "id": "discovery",
-  "method": "tools/list"
-}
-```
-
-#### SSE Request
-
-```javascript
-sendMCPMessage(connectionId, {
-  jsonrpc: '2.0',
-  id: 'discovery',
-  method: 'tools/list'
-});
-```
-
-#### Response
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "discovery",
-  "result": {
-    "tools": [
-      {
-        "name": "google-play-app-details",
-        "description": "Get detailed information about a Google Play Store app including title, description, ratings, developer info, and metadata",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "appId": {
-              "type": "string",
-              "description": "The Google Play Store app ID (package name, e.g., com.example.app)",
-              "pattern": "^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$"
-            },
-            "lang": {
-              "type": "string",
-              "description": "Language code for localized content (default: en)",
-              "pattern": "^[a-z]{2}$",
-              "default": "en"
-            },
-            "country": {
-              "type": "string", 
-              "description": "Country code for region-specific content (default: us)",
-              "pattern": "^[a-z]{2}$",
-              "default": "us"
-            }
-          },
-          "required": ["appId"]
-        }
-      }
-      // ... 18 more tools
-    ]
-  }
-}
+{ "jsonrpc": "2.0", "id": 1, "method": "tools/list" }
 ```
 
 ## Rate Limiting
 
-The server implements rate limiting to prevent abuse:
-
-- **Window**: 15 minutes (configurable)
-- **Limit**: 100 requests per window (configurable)
-- **Headers**: Rate limit information is included in response headers
-
-When rate limited, you'll receive a 429 status code:
+`/mcp` and `/sse` are limited per client IP: `RATE_LIMIT_MAX_REQUESTS` (default `100`, `0` disables) per `RATE_LIMIT_WINDOW_MS` (default `60000`). Responses carry the IETF `RateLimit` and `RateLimit-Policy` headers. Over the limit the server returns HTTP `429` with a JSON-RPC error:
 
 ```json
-{
-  "success": false,
-  "error": {
-    "type": "rate_limit_error",
-    "code": "RATE_LIMIT_EXCEEDED",
-    "message": "Too many requests. Please try again later.",
-    "retryAfter": 900
-  }
-}
+{ "jsonrpc": "2.0", "id": null, "error": { "code": -32603, "message": "Rate limit exceeded, retry later" } }
 ```
+
+Behind a reverse proxy, set `TRUST_PROXY` (e.g. `1`). Otherwise all clients share the proxy's IP and therefore one limit.
 
 ## Health Check
 
-Check server health at `/health`:
+`GET /health` is not rate-limited and needs no Origin:
 
-```bash
-curl http://localhost:3000/health
-```
-
-Response:
 ```json
-{
-  "status": "healthy",
-  "uptime": 3600,
-  "tools": 19,
-  "sseConnections": 3,
-  "config": {
-    "port": 3000,
-    "logLevel": "info",
-    "transports": {
-      "http": true,
-      "sse": true
-    }
-  }
-}
+{ "status": "healthy", "timestamp": "2026-11-01T20:00:00.000Z", "version": "1.0.0" }
 ```
 
 ## Best Practices
@@ -1272,7 +840,7 @@ Response:
 6. **Set appropriate timeouts** - Network requests to app stores can be slow
 7. **Choose the right transport** - Use HTTP transport for modern clients, SSE for legacy support
 8. **Monitor SSE connections** - Close unused SSE connections to free server resources
-9. **Handle connection failures** - Implement reconnection logic for SSE transport
+9. **Handle connection failures** - Reconnect SSE streams; the old connection id is gone (404) after a reconnect
 10. **Validate input parameters** - Use the provided JSON schemas to validate inputs before sending requests
 
 ## Raw Data Model Information

@@ -16,7 +16,7 @@ export class GooglePlayCategoriesTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(): Promise<any> {
+  async execute(): Promise<unknown> {
     return gplay.categories();
   }
 }

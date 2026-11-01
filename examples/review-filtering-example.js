@@ -12,14 +12,14 @@ const MCP_SERVER_URL = 'http://localhost:3000/mcp';
 /**
  * Send MCP request to the server
  */
-async function sendMCPRequest(toolName, arguments) {
+async function sendMCPRequest(toolName, args) {
   const request = {
     jsonrpc: '2.0',
     id: Math.random().toString(36).substring(7),
     method: 'tools/call',
     params: {
       name: toolName,
-      arguments: arguments
+      arguments: args
     }
   };
 

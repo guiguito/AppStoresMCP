@@ -34,7 +34,7 @@ export class AppStoreAppDetailsTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: AppStoreAppDetailsParams): Promise<any> {
+  async execute(params: AppStoreAppDetailsParams): Promise<unknown> {
     return store.app({
       ...appStoreIdOption(params.appId),
       country: params.country || 'us',

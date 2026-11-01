@@ -26,7 +26,7 @@ export class AppStorePrivacyTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: AppStorePrivacyParams): Promise<any> {
+  async execute(params: AppStorePrivacyParams): Promise<unknown> {
     return store.privacy({ id: params.id, country: params.country || 'us' });
   }
 }

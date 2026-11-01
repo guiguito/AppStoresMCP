@@ -30,7 +30,7 @@ export class AppStoreSuggestTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: AppStoreSuggestParams): Promise<any> {
+  async execute(params: AppStoreSuggestParams): Promise<unknown> {
     return store.suggest({ term: params.term, country: params.country || 'us' });
   }
 }

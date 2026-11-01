@@ -12,7 +12,8 @@ export const SUPPORTED_PROTOCOL_VERSIONS = ['2025-03-26', '2024-11-05'];
 /**
  * Validate the JSON-RPC envelope (requests and notifications)
  */
-export function isValidMCPRequest(body: any): body is MCPRequest {
+export function isValidMCPRequest(value: unknown): value is MCPRequest {
+  const body = value as Record<string, unknown> | null;
   return (
     !!body &&
     typeof body === 'object' &&
@@ -43,7 +44,7 @@ export class MCPHandler {
           jsonrpc: '2.0',
           id,
           result: {
-            protocolVersion: SUPPORTED_PROTOCOL_VERSIONS.includes(requested) ? requested : SUPPORTED_PROTOCOL_VERSIONS[0],
+            protocolVersion: typeof requested === 'string' && SUPPORTED_PROTOCOL_VERSIONS.includes(requested) ? requested : SUPPORTED_PROTOCOL_VERSIONS[0],
             capabilities: { tools: {} },
             serverInfo: { name: 'app-store-mcp-server', version: '1.0.0' }
           }
@@ -63,14 +64,14 @@ export class MCPHandler {
   /**
    * Unknown tool → JSON-RPC error; bad arguments or tool failure → result with isError
    */
-  private async handleToolCall(id: string | number, params: any): Promise<MCPResponse> {
+  private async handleToolCall(id: string | number, params: MCPRequest['params']): Promise<MCPResponse> {
     const name = params?.name;
     const tool = typeof name === 'string' ? this.toolRegistry.getTool(name) : undefined;
     if (!tool) {
       return errorResponse(id, MCPErrorCode.INVALID_PARAMS, `Unknown tool: ${String(name)}`);
     }
 
-    const args = params.arguments || {};
+    const args = (params?.arguments as Record<string, unknown> | undefined) || {};
     try {
       validateToolParams(args, tool.inputSchema);
       const result = await tool.execute(args);

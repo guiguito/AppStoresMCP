@@ -3,12 +3,13 @@
  */
 
 import * as store from 'app-store-scraper-ts';
+import type { ListOptions } from 'app-store-scraper-ts';
 import { JSONSchema7 } from 'json-schema';
 import { MCPTool } from '../types/mcp';
 import { country, fullDetail, lang } from './common';
 
 interface AppStoreListParams {
-  collection?: string;
+  collection?: ListOptions['collection'];
   category?: string;
   country?: string;
   lang?: string;
@@ -71,11 +72,11 @@ export class AppStoreListTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: AppStoreListParams = {}): Promise<any> {
-    const categories = store.constants.category as Record<string, number>;
+  async execute(params: AppStoreListParams = {}): Promise<unknown> {
+    const categories = store.constants.category as Record<string, NonNullable<ListOptions['category']>>;
     return store.list({
-      collection: (params.collection || store.constants.collection.TOP_FREE_IOS) as any,
-      ...(params.category ? { category: categories[params.category] as any } : {}),
+      collection: params.collection || store.constants.collection.TOP_FREE_IOS,
+      ...(params.category ? { category: categories[params.category] } : {}),
       country: params.country || 'us',
       lang: params.lang || 'en',
       num: params.num || 50,
