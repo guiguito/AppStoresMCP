@@ -62,7 +62,7 @@ export class GooglePlayAppReviewsTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: GooglePlayAppReviewsParams): Promise<any> {
+  async execute(params: GooglePlayAppReviewsParams): Promise<unknown> {
     const reviews = await gplay.reviews({
       appId: params.appId,
       num: params.num || 100,

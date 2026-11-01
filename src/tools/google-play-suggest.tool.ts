@@ -32,7 +32,7 @@ export class GooglePlaySuggestTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: GooglePlaySuggestParams): Promise<any> {
+  async execute(params: GooglePlaySuggestParams): Promise<unknown> {
     return gplay.suggest({
       term: params.term,
       lang: params.lang || 'en',

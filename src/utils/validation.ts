@@ -2,7 +2,7 @@
  * JSON Schema validation utilities for MCP parameter validation
  */
 
-import { JSONSchema7 } from 'json-schema';
+import { JSONSchema7, JSONSchema7Type } from 'json-schema';
 import { MCPError, MCPErrorCode } from '../types/mcp';
 
 /**
@@ -21,7 +21,7 @@ export class SchemaValidator {
   /**
    * Validate data against a JSON Schema
    */
-  static validate(data: any, schema: JSONSchema7): ValidationResult {
+  static validate(data: unknown, schema: JSONSchema7): ValidationResult {
     const errors: string[] = [];
 
     try {
@@ -39,7 +39,7 @@ export class SchemaValidator {
   /**
    * Validate a value against schema recursively
    */
-  private static validateValue(value: any, schema: JSONSchema7, path: string, errors: string[]): void {
+  private static validateValue(value: unknown, schema: JSONSchema7, path: string, errors: string[]): void {
     // Type validation
     if (schema.type) {
       const actualType = this.getType(value);
@@ -48,7 +48,7 @@ export class SchemaValidator {
       // Special case: integer is a subset of number
       if (schema.type === 'integer' && typeof value === 'number') {
         // Don't fail type check for integers, handle it in number validation section
-      } else if (!expectedTypes.includes(actualType as any)) {
+      } else if (!(expectedTypes as string[]).includes(actualType)) {
         errors.push(`${path || 'root'}: Expected type ${expectedTypes.join(' or ')}, got ${actualType}`);
         return;
       }
@@ -68,7 +68,7 @@ export class SchemaValidator {
       for (const [propName, propSchema] of Object.entries(schema.properties)) {
         if (propName in value) {
           const propPath = path ? `${path}.${propName}` : propName;
-          this.validateValue(value[propName], propSchema as JSONSchema7, propPath, errors);
+          this.validateValue((value as Record<string, unknown>)[propName], propSchema as JSONSchema7, propPath, errors);
         }
       }
 
@@ -126,7 +126,7 @@ export class SchemaValidator {
     }
 
     // Enum validation
-    if (schema.enum && !schema.enum.includes(value)) {
+    if (schema.enum && !schema.enum.includes(value as JSONSchema7Type)) {
       errors.push(`${path || 'root'}: Value must be one of: ${schema.enum.join(', ')}`);
     }
   }
@@ -134,7 +134,7 @@ export class SchemaValidator {
   /**
    * Get the JSON Schema type of a value
    */
-  private static getType(value: any): string {
+  private static getType(value: unknown): string {
     if (value === null) return 'null';
     if (Array.isArray(value)) return 'array';
     return typeof value;
@@ -144,7 +144,7 @@ export class SchemaValidator {
 /**
  * Validate MCP tool parameters against schema
  */
-export function validateToolParams(params: any, schema: JSONSchema7): void {
+export function validateToolParams(params: unknown, schema: JSONSchema7): void {
   const result = SchemaValidator.validate(params, schema);
   
   if (!result.valid) {

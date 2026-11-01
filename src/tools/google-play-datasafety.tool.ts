@@ -26,7 +26,7 @@ export class GooglePlayDataSafetyTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: GooglePlayDataSafetyParams): Promise<any> {
+  async execute(params: GooglePlayDataSafetyParams): Promise<unknown> {
     return gplay.datasafety({ appId: params.appId, lang: params.lang || 'en' });
   }
 }

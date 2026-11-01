@@ -32,7 +32,7 @@ export class GooglePlayPermissionsTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: GooglePlayPermissionsParams): Promise<any> {
+  async execute(params: GooglePlayPermissionsParams): Promise<unknown> {
     return gplay.permissions({
       appId: params.appId,
       lang: params.lang || 'en',

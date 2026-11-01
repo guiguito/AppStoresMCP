@@ -173,7 +173,7 @@ export function isToolEnabled(toolName: string, config: ServerConfig): boolean {
 /**
  * Get environment-specific configuration summary for logging
  */
-export function getConfigSummary(config: ServerConfig): Record<string, any> {
+export function getConfigSummary(config: ServerConfig): Record<string, unknown> {
   return {
     port: config.port,
     corsOrigins: config.cors.origins.length > 0 ? config.cors.origins.join(', ') : 'none',

@@ -48,7 +48,7 @@ export class AppStoreSearchTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: AppStoreSearchParams): Promise<any> {
+  async execute(params: AppStoreSearchParams): Promise<unknown> {
     const results = await store.search({
       term: params.query,
       num: params.num || 50,

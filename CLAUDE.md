@@ -11,7 +11,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run test:integration` - Run integration tests (scrapers mocked)
 - `npm run test:live` - Build and call all 19 tools against the real stores (catches store/library drift; unit tests mock the scrapers)
 - `npm run test:coverage` - Run tests with coverage report
-- `npm run lint` - Run ESLint
+- `npm run lint` - Run ESLint on `src`, `scripts`, `tools` and `examples`
+
+CI (`.github/workflows/ci.yml`) runs lint, build and tests on Node 20/22/24 for pushes and PRs to `main`. `.github/workflows/live.yml` runs `npm run test:live` every Monday and on demand.
 
 ### Development
 - `npm run dev` - Start development server with ts-node

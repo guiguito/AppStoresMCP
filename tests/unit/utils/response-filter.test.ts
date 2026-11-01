@@ -30,12 +30,12 @@ describe('Response Filter Utils', () => {
 
   describe('filterAppData', () => {
     it('should return full data when fullDetail is true', () => {
-      const result = filterAppData(mockAppData, true);
+      const result = <any>filterAppData(mockAppData, true);
       expect(result).toEqual(mockAppData);
     });
 
     it('should filter out verbose fields when fullDetail is false', () => {
-      const result = filterAppData(mockAppData, false);
+      const result = <any>filterAppData(mockAppData, false);
       
       // Should keep essential fields
       expect(result.id).toBe(553834731);
@@ -56,7 +56,7 @@ describe('Response Filter Utils', () => {
 
     it('should handle arrays of app data', () => {
       const appArray = [mockAppData, { ...mockAppData, id: 2 }];
-      const result = filterAppData(appArray, false);
+      const result = <any>filterAppData(appArray, false);
       
       expect(Array.isArray(result)).toBe(true);
       expect(result).toHaveLength(2);
@@ -77,7 +77,7 @@ describe('Response Filter Utils', () => {
     });
 
     it('should default to filtering when fullDetail is not specified', () => {
-      const result = filterAppData(mockAppData);
+      const result = <any>filterAppData(mockAppData);
       expect(result.description).toBeUndefined();
       expect(result.title).toBe('Example App');
     });
@@ -113,18 +113,18 @@ describe('Response Filter Utils', () => {
     };
 
     it('should return full data when fullDetail is true for App Store', () => {
-      const result = filterReviewData([mockAppStoreReview], true, 'app-store');
+      const result = <any>filterReviewData([mockAppStoreReview], true, 'app-store');
       expect(result).toEqual([mockAppStoreReview]);
     });
 
     it('should return full data when fullDetail is true for Google Play', () => {
       const mockGooglePlayData = { data: [mockGooglePlayReview], nextPaginationToken: 'token' };
-      const result = filterReviewData(mockGooglePlayData, true, 'google-play');
+      const result = <any>filterReviewData(mockGooglePlayData, true, 'google-play');
       expect(result).toEqual(mockGooglePlayData);
     });
 
     it('should filter App Store reviews when fullDetail is false', () => {
-      const result = filterReviewData([mockAppStoreReview], false, 'app-store');
+      const result = <any>filterReviewData([mockAppStoreReview], false, 'app-store');
       
       expect(Array.isArray(result)).toBe(true);
       expect(result[0].id).toBe(1);
@@ -143,7 +143,7 @@ describe('Response Filter Utils', () => {
 
     it('should filter Google Play reviews when fullDetail is false', () => {
       const mockGooglePlayData = { data: [mockGooglePlayReview], nextPaginationToken: 'token' };
-      const result = filterReviewData(mockGooglePlayData, false, 'google-play');
+      const result = <any>filterReviewData(mockGooglePlayData, false, 'google-play');
       
       expect(result.data).toBeDefined();
       expect(result.nextPaginationToken).toBe('token');
@@ -166,7 +166,7 @@ describe('Response Filter Utils', () => {
     });
 
     it('should default to filtering when fullDetail is not specified', () => {
-      const result = filterReviewData([mockAppStoreReview], undefined, 'app-store');
+      const result = <any>filterReviewData([mockAppStoreReview], undefined, 'app-store');
       expect(result[0].url).toBeUndefined();
       expect(result[0].userName).toBe('TestUser');
     });

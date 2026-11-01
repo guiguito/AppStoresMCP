@@ -28,13 +28,13 @@ describe('MCPHandler', () => {
   describe('initialize', () => {
     it('echoes a supported protocol version', async () => {
       const res = await handler.handleRequest({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2024-11-05' } });
-      expect(res!.result.protocolVersion).toBe('2024-11-05');
-      expect(res!.result.capabilities).toEqual({ tools: {} });
+      expect((res!.result as any).protocolVersion).toBe('2024-11-05');
+      expect((res!.result as any).capabilities).toEqual({ tools: {} });
     });
 
     it('answers with the latest version when the requested one is unsupported', async () => {
       const res = await handler.handleRequest({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '1999-01-01' } });
-      expect(res!.result.protocolVersion).toBe('2025-03-26');
+      expect((res!.result as any).protocolVersion).toBe('2025-03-26');
     });
   });
 
@@ -49,7 +49,7 @@ describe('MCPHandler', () => {
 
   it('lists tools', async () => {
     const res = await handler.handleRequest({ jsonrpc: '2.0', id: 2, method: 'tools/list' });
-    expect(res!.result.tools).toEqual([{ name: 'echo', description: 'Echo tool', inputSchema: tool.inputSchema }]);
+    expect((res!.result as any).tools).toEqual([{ name: 'echo', description: 'Echo tool', inputSchema: tool.inputSchema }]);
   });
 
   it('returns -32601 for unknown methods', async () => {
@@ -62,8 +62,8 @@ describe('MCPHandler', () => {
     it('returns the tool result as text content', async () => {
       const res = await handler.handleRequest({ jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'echo', arguments: { text: 'hi' } } });
       expect(res!.error).toBeUndefined();
-      expect(res!.result.isError).toBeUndefined();
-      expect(JSON.parse(res!.result.content[0].text)).toEqual({ echoed: 'hi' });
+      expect((res!.result as any).isError).toBeUndefined();
+      expect(JSON.parse((res!.result as any).content[0].text)).toEqual({ echoed: 'hi' });
     });
 
     it('serialises an undefined result instead of failing', async () => {
@@ -80,8 +80,8 @@ describe('MCPHandler', () => {
     it('returns isError with validation details for bad arguments, without calling the tool', async () => {
       const res = await handler.handleRequest({ jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'echo', arguments: {} } });
       expect(res!.error).toBeUndefined();
-      expect(res!.result.isError).toBe(true);
-      expect(res!.result.content[0].text).toMatch(/text/);
+      expect((res!.result as any).isError).toBe(true);
+      expect((res!.result as any).content[0].text).toMatch(/text/);
       expect(tool.execute).not.toHaveBeenCalled();
     });
 

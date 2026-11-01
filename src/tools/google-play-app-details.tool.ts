@@ -28,7 +28,7 @@ export class GooglePlayAppDetailsTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: GooglePlayAppDetailsParams): Promise<any> {
+  async execute(params: GooglePlayAppDetailsParams): Promise<unknown> {
     return gplay.app({
       appId: params.appId,
       lang: params.lang || 'en',

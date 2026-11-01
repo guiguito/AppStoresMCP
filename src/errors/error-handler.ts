@@ -8,8 +8,11 @@ import { MCPErrorCode, MCPResponse } from '../types/mcp';
  * Human-readable message for any thrown value, keeping `error.data` (e.g. validation details)
  */
 export function errorMessage(error: unknown): string {
-  const e = error as any;
-  const message = typeof e === 'string' ? e : e?.message || 'Unknown error';
+  const e = error as { message?: string; data?: unknown } | string | null | undefined;
+  if (typeof e === 'string') {
+    return e;
+  }
+  const message = e?.message || 'Unknown error';
   return e?.data !== undefined ? `${message}: ${JSON.stringify(e.data)}` : message;
 }
 

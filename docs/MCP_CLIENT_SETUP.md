@@ -200,8 +200,7 @@ For clients that only support stdio-based MCP servers, use the provided bridge:
 ```
 
 **Bridge Utilities Available**:
-- `tools/mcp-http-proxy.js` - HTTP to stdio bridge
-- `tools/mcp-stdio-bridge.js` - Alternative stdio bridge for Claude Desktop
+- `tools/mcp-http-proxy.js` - stdio ↔ HTTP bridge
 
 ## Configuration Examples
 
@@ -509,8 +508,7 @@ If your MCP client only supports stdio-based servers, the project provides bridg
 
 ### Available Bridges
 
-1. **`tools/mcp-http-proxy.js`** - General-purpose HTTP to stdio bridge
-2. **`tools/mcp-stdio-bridge.js`** - Specialized bridge for Claude Desktop
+1. **`tools/mcp-http-proxy.js`** - stdio ↔ HTTP bridge (use it for any stdio-only client, including Claude Desktop)
 
 ### How Bridges Work
 

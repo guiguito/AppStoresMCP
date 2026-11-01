@@ -32,7 +32,7 @@ export class AppStoreDeveloperTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: AppStoreDeveloperParams): Promise<any> {
+  async execute(params: AppStoreDeveloperParams): Promise<unknown> {
     return store.developer({
       devId: params.devId,
       country: params.country || 'us',

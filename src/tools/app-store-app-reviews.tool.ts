@@ -48,7 +48,7 @@ export class AppStoreAppReviewsTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: AppStoreAppReviewsParams): Promise<any> {
+  async execute(params: AppStoreAppReviewsParams): Promise<unknown> {
     const reviews = await store.reviews({
       ...appStoreIdOption(params.appId),
       page: params.page || 1,

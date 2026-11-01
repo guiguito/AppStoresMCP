@@ -11,7 +11,7 @@ export interface MCPRequest {
   jsonrpc: '2.0';
   id?: string | number;
   method: string;
-  params?: any;
+  params?: Record<string, unknown>;
 }
 
 /**
@@ -20,21 +20,24 @@ export interface MCPRequest {
 export interface MCPResponse {
   jsonrpc: '2.0';
   id: string | number | null;
-  result?: any;
+  result?: unknown;
   error?: MCPError;
 }
 
 export interface MCPError {
   code: number;
   message: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface MCPTool {
   name: string;
   description: string;
   inputSchema: JSONSchema7;
-  execute(params: any): Promise<any>;
+  /** Raw library data, serialized as JSON text by the protocol handler */
+  // Each tool narrows `params` to its own type; mcp-handler validates args against inputSchema before calling.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  execute(params: any): Promise<unknown>;
 }
 
 export interface ToolsListResponse {

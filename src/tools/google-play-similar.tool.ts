@@ -30,7 +30,7 @@ export class GooglePlaySimilarTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: GooglePlaySimilarParams): Promise<any> {
+  async execute(params: GooglePlaySimilarParams): Promise<unknown> {
     return gplay.similar({
       appId: params.appId,
       lang: params.lang || 'en',

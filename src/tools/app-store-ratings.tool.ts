@@ -26,7 +26,7 @@ export class AppStoreRatingsTool implements MCPTool {
     additionalProperties: false
   };
 
-  async execute(params: AppStoreRatingsParams): Promise<any> {
+  async execute(params: AppStoreRatingsParams): Promise<unknown> {
     return store.ratings({ id: params.id, country: params.country || 'us' });
   }
 }

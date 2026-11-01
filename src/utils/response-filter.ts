@@ -45,102 +45,54 @@ const GOOGLE_PLAY_REVIEW_ESSENTIAL_FIELDS = [
   'version'
 ];
 
+type JsonObject = Record<string, unknown>;
+
 /**
- * Filter app data to remove verbose fields when fullDetail is false
- * @param appData - Raw app data from scraper
- * @param fullDetail - Whether to return full details
- * @returns Filtered app data
+ * Keep only `fields` of an object; non-objects pass through untouched
  */
-export function filterAppData(appData: any, fullDetail: boolean = false): any {
+function pick(value: unknown, fields: string[]): unknown {
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  const source = value as JsonObject;
+  const picked: JsonObject = {};
+  for (const field of fields) {
+    if (Object.hasOwn(source, field)) {
+      picked[field] = source[field];
+    }
+  }
+  return picked;
+}
+
+/**
+ * Filter app data (one app or a list) to ESSENTIAL_FIELDS unless fullDetail is set
+ */
+export function filterAppData(appData: unknown, fullDetail: boolean = false): unknown {
   if (fullDetail || !appData) {
     return appData;
   }
-
-  // If it's an array, filter each item
-  if (Array.isArray(appData)) {
-    return appData.map(item => filterSingleApp(item));
-  }
-
-  // If it's a single app, filter it
-  return filterSingleApp(appData);
+  return Array.isArray(appData) ? appData.map(app => pick(app, ESSENTIAL_FIELDS)) : pick(appData, ESSENTIAL_FIELDS);
 }
 
 /**
- * Filter a single app object to keep only essential fields
- * @param app - Single app data object
- * @returns Filtered app object with only essential fields
+ * Filter review data to the platform's essential fields unless fullDetail is set.
+ * Google Play returns `{ data, nextPaginationToken }`, the App Store a plain array.
  */
-function filterSingleApp(app: any): any {
-  if (!app || typeof app !== 'object') {
-    return app;
-  }
-
-  const filtered: any = {};
-  
-  // Keep only essential fields
-  ESSENTIAL_FIELDS.forEach(field => {
-    if (app.hasOwnProperty(field)) {
-      filtered[field] = app[field];
-    }
-  });
-
-  return filtered;
-}
-
-/**
- * Filter review data to remove verbose fields when fullDetail is false
- * @param reviewData - Raw review data from scraper
- * @param fullDetail - Whether to return full details
- * @param platform - Platform type ('app-store' or 'google-play')
- * @returns Filtered review data
- */
-export function filterReviewData(reviewData: any, fullDetail: boolean = false, platform: 'app-store' | 'google-play'): any {
+export function filterReviewData(reviewData: unknown, fullDetail: boolean = false, platform: 'app-store' | 'google-play'): unknown {
   if (fullDetail || !reviewData) {
     return reviewData;
   }
+  const fields = platform === 'app-store' ? APP_STORE_REVIEW_ESSENTIAL_FIELDS : GOOGLE_PLAY_REVIEW_ESSENTIAL_FIELDS;
 
-  // Handle Google Play format (has data array and pagination token)
-  if (platform === 'google-play' && reviewData.data && Array.isArray(reviewData.data)) {
+  if (Array.isArray(reviewData)) {
+    return reviewData.map(review => pick(review, fields));
+  }
+  const page = reviewData as JsonObject;
+  if (platform === 'google-play' && Array.isArray(page.data)) {
     return {
-      data: reviewData.data.map((review: any) => filterSingleReview(review, GOOGLE_PLAY_REVIEW_ESSENTIAL_FIELDS)),
-      nextPaginationToken: reviewData.nextPaginationToken
+      data: page.data.map(review => pick(review, fields)),
+      nextPaginationToken: page.nextPaginationToken
     };
   }
-
-  // Handle App Store format (direct array)
-  if (platform === 'app-store' && Array.isArray(reviewData)) {
-    return reviewData.map((review: any) => filterSingleReview(review, APP_STORE_REVIEW_ESSENTIAL_FIELDS));
-  }
-
-  // If it's a single review, filter it
-  if (typeof reviewData === 'object' && !Array.isArray(reviewData)) {
-    const essentialFields = platform === 'app-store' ? APP_STORE_REVIEW_ESSENTIAL_FIELDS : GOOGLE_PLAY_REVIEW_ESSENTIAL_FIELDS;
-    return filterSingleReview(reviewData, essentialFields);
-  }
-
-  return reviewData;
+  return pick(reviewData, fields);
 }
-
-/**
- * Filter a single review object to keep only essential fields
- * @param review - Single review data object
- * @param essentialFields - Array of field names to keep
- * @returns Filtered review object with only essential fields
- */
-function filterSingleReview(review: any, essentialFields: string[]): any {
-  if (!review || typeof review !== 'object') {
-    return review;
-  }
-
-  const filtered: any = {};
-  
-  // Keep only essential fields
-  essentialFields.forEach(field => {
-    if (review.hasOwnProperty(field)) {
-      filtered[field] = review[field];
-    }
-  });
-
-  return filtered;
-}
-

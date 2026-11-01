@@ -1,0 +1,23 @@
+name: Live
+
+# Calls all 19 tools through the server against the real Google Play and App Store,
+# so it catches store or scraper-library changes the mocked test suite can't.
+# Separate from CI and not required: the stores can rate-limit runner IPs.
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:live
+        env:
+          ENABLE_LOGGING: 'false'
