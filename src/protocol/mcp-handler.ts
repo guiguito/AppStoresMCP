@@ -3,6 +3,7 @@
  */
 
 import { MCPRequest, MCPResponse, MCPErrorCode } from '../types/mcp';
+import { SERVER_NAME, SERVER_VERSION } from '../version';
 import { ToolRegistry } from '../registry/tool-registry';
 import { validateToolParams } from '../utils/validation';
 import { errorMessage, errorResponse, logError } from '../errors/error-handler';
@@ -46,7 +47,7 @@ export class MCPHandler {
           result: {
             protocolVersion: typeof requested === 'string' && SUPPORTED_PROTOCOL_VERSIONS.includes(requested) ? requested : SUPPORTED_PROTOCOL_VERSIONS[0],
             capabilities: { tools: {} },
-            serverInfo: { name: 'app-store-mcp-server', version: '1.0.0' }
+            serverInfo: { name: SERVER_NAME, version: SERVER_VERSION }
           }
         };
       }

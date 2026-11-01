@@ -29,6 +29,9 @@ describe('MCPServer integration', () => {
     const init = await rpc(app, 'initialize', { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 't', version: '1' } });
     expect(init.status).toBe(200);
     expect(init.body.result.protocolVersion).toBe('2024-11-05');
+    // serverInfo and /health come from package.json, so a release can't ship a stale version
+    const pkg = require('../../package.json');
+    expect(init.body.result.serverInfo).toEqual({ name: pkg.name, version: pkg.version });
 
     const notif = await rpc(app, "notifications/initialized", undefined, null);
     expect(notif.status).toBe(202);
@@ -48,6 +51,7 @@ describe('MCPServer integration', () => {
 
     const health = await request(app).get('/health');
     expect(health.status).toBe(200);
+    expect(health.body.version).toBe(require('../../package.json').version);
   });
 
   it('honours enabled/disabled tool configuration', async () => {
