@@ -3,6 +3,7 @@
  */
 
 import express, { Request, Response, NextFunction, RequestHandler, ErrorRequestHandler } from 'express';
+import { SERVER_VERSION } from '../version';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
@@ -70,7 +71,7 @@ export class HTTPTransportHandler {
       res.json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
-        version: process.env.npm_package_version || '1.0.0'
+        version: SERVER_VERSION
       });
     });
 
