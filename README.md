@@ -7,7 +7,7 @@ A comprehensive Node.js TypeScript MCP (Model Context Protocol) server that prov
 ## Features
 
 - **Dual Transport Support**: Implements both MCP Streamable HTTP and SSE (Server-Sent Events) transport protocols
-- **Comprehensive Coverage**: 19 MCP tools covering all available functionality from both app store scraping libraries
+- **Comprehensive Coverage**: 20 MCP tools covering all available functionality from both app store scraping libraries
 - **Response Filtering**: Automatic filtering of verbose fields (descriptions, summaries) to reduce token usage by up to 93%
 - **Raw Data Models**: Returns complete, unmodified responses from underlying scraping libraries (when fullDetail=true)
 - **Dual Platform Support**: Complete access to both Google Play Store and Apple App Store data
@@ -67,22 +67,23 @@ The server will start on port 3000 by default. You can verify it's running by vi
 
 The server exposes 19 comprehensive MCP tools for complete app store data access:
 
-### Google Play Store Tools (10 tools)
+### Google Play Store Tools (11 tools)
 
 1. **`google-play-app-details`** - Get detailed app information including metadata, ratings, and descriptions
-2. **`google-play-app-reviews`** - Fetch app reviews with pagination and sorting options
-3. **`google-play-search`** - Search for apps (up to 30 results; Play serves no more per query)
+2. **`google-play-app-reviews`** - Fetch app reviews with pagination, sorting, and star-rating/device filters
+3. **`google-play-search`** - Search for apps (up to 250 results; most queries return Play's first page of ~30)
 4. **`google-play-list`** - Get app lists from collections (TOP_FREE, TOP_PAID, GROSSING) and categories (up to 500 results)
 5. **`google-play-developer`** - Get all apps by a developer (pass the `developerId` from app details)
 6. **`google-play-suggest`** - Get search suggestions for app discovery
 7. **`google-play-similar`** - Find apps similar to a given app
 8. **`google-play-permissions`** - Get detailed app permissions information
 9. **`google-play-datasafety`** - Get app data safety and privacy information
-10. **`google-play-categories`** - Get list of available app categories
+10. **`google-play-availability`** - Check in which countries an app is offered
+11. **`google-play-categories`** - Get list of available app categories
 
 ### Apple App Store Tools (9 tools)
 
-1. **`app-store-app-details`** - Get detailed app information including metadata, ratings, and descriptions
+1. **`app-store-app-details`** - Get detailed app information including metadata, ratings, and descriptions; optionally the subtitle and top in-app purchases with prices
 2. **`app-store-app-reviews`** - Fetch app reviews with pagination and sorting options
 3. **`app-store-search`** - Search for apps (paginated via `page`)
 4. **`app-store-list`** - Get app lists from collections and categories (up to 200 results)

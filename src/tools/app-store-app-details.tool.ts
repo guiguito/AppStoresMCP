@@ -13,6 +13,7 @@ interface AppStoreAppDetailsParams {
   lang?: string;
   subtitle?: boolean;
   ratings?: boolean;
+  inAppPurchases?: boolean;
 }
 
 export class AppStoreAppDetailsTool implements MCPTool {
@@ -30,6 +31,11 @@ export class AppStoreAppDetailsTool implements MCPTool {
         description: 'Also fetch the ratings histogram and merge `ratings`/`histogram` into the result (one extra request, default: false)',
         default: false
       },
+      inAppPurchases: {
+        type: 'boolean',
+        description: 'Also return the app\'s top in-app purchases (up to 10, as on its App Store page) in `inAppPurchases`: title, numeric price, currency, formattedPrice, subscription and subscriptionPeriod (ISO 8601, e.g. P1M), priced in the `country` storefront. One extra request; the call fails if it fails (default: false).',
+        default: false
+      },
       subtitle
     },
     required: ['appId'],
@@ -42,6 +48,7 @@ export class AppStoreAppDetailsTool implements MCPTool {
       country: params.country || 'us',
       ...(params.lang ? { lang: params.lang } : {}),
       ...(params.subtitle ? { subtitle: true } : {}),
+      ...(params.inAppPurchases ? { inAppPurchases: true } : {}),
       ...(params.ratings ? { ratings: true } : {})
     });
   }

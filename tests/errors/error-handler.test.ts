@@ -11,6 +11,9 @@ describe('errorMessage', () => {
     expect(errorMessage('plain')).toBe('plain');
     expect(errorMessage({ message: 'obj' })).toBe('obj');
     expect(errorMessage(undefined)).toBe('Unknown error');
+    // Library error classes keep their name so the caller can tell a 404 from a rate limit or a captcha block
+    class RateLimitError extends Error { override name = 'RateLimitError'; }
+    expect(errorMessage(new RateLimitError('Request failed: 429'))).toBe('RateLimitError: Request failed: 429');
   });
 
   it('keeps error.data such as validation details', () => {

@@ -40,7 +40,7 @@ export class AppStoreAppReviewsTool implements MCPTool {
       country,
       fullDetail: {
         type: 'boolean',
-        description: 'Whether to return full review details (default: false). When false, only essential fields are returned: id, version, userName, score, title, text, updated',
+        description: 'Whether to return full review details (default: false). When false, only essential fields are returned: id, version, userName, score, title, text, updated, voteSum, voteCount',
         default: false
       }
     },

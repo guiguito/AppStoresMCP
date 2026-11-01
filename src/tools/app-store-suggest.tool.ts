@@ -21,8 +21,8 @@ export class AppStoreSuggestTool implements MCPTool {
     properties: {
       term: {
         type: 'string',
-        description: 'Search term to get suggestions for (minimum 2 characters)',
-        minLength: 2
+        description: 'Search term to get suggestions for',
+        minLength: 1
       },
       country
     },

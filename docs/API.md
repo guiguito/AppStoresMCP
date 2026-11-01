@@ -1,6 +1,6 @@
 # API Documentation
 
-This document provides detailed information about all 19 MCP tools available in the App Store MCP Server, including request/response formats and examples for both HTTP and SSE transport protocols.
+This document provides detailed information about all 20 MCP tools available in the App Store MCP Server, including request/response formats and examples for both HTTP and SSE transport protocols.
 
 ## MCP Protocol Overview
 
@@ -43,7 +43,7 @@ No authentication is required. The server uses CORS for access control.
 
 Arguments are validated against each tool's `inputSchema` before the tool runs. Invalid arguments (wrong type, value outside an enum/pattern/range, missing required or unknown properties) are returned as a tool result with `isError: true` whose text lists every problem, e.g. `Invalid parameters: {"validationErrors":["root: Unknown property 'foo'"]}`, so the model can correct the call. Calling an unknown tool is a JSON-RPC error (code `-32602`).
 
-Failures from the stores themselves (app not found, network errors, upstream validation) are not wrapped by the tools: the library error message is returned as a tool result with `isError: true`, for example `Request failed: 404 Not Found` (Google Play) or `App not found (404)` (App Store).
+Failures from the stores themselves (app not found, network errors, upstream validation) are not wrapped by the tools: the library error is returned as a tool result with `isError: true`, prefixed with its class name, for example `NotFoundError: Request failed: 404 Not Found` (Google Play) or `NotFoundError: App not found (404)` (App Store). `RateLimitError` (Play still answering 429 after retries) and `BlockedError` (Google's captcha page: too many requests from this IP) mean slow down; `ValidationError` means the library rejected an option.
 
 Language codes accept `xx`, `xx-YY` or `xx_yy` forms (e.g. `en`, `pt-BR`, `en_us`); country codes are two lowercase letters.
 
@@ -61,7 +61,7 @@ Get detailed information about a Google Play Store app.
 | `lang` | string | No | Language code (default: "en") |
 | `country` | string | No | Country code (default: "us") |
 
-`released` is Play's localized date text (e.g. "May 27, 2014", or "27 mai 2014" with `lang: "fr"`); use `releasedTimestamp` (ms since epoch) to sort or compare. `developerId` is the decoded developer id (e.g. "Spotify AB" or "5700313618786177705") and can be passed as-is to `google-play-developer`.
+`released` is Play's localized date text (e.g. "May 27, 2014", or "27 mai 2014" with `lang: "fr"`); use `releasedTimestamp` (ms since epoch) to sort or compare. `developerId` is the decoded developer id (e.g. "Spotify AB" or "5700313618786177705") and can be passed as-is to `google-play-developer`. `recentChanges` is plain text (line breaks kept); `recentChangesHTML` is the markup Play serves.
 
 #### Example Request
 
@@ -137,6 +137,7 @@ Get detailed information about a Google Play Store app.
   "updated": 1704067200000,
   "version": "2.23.24.14",
   "recentChanges": "• Bug fixes and other improvements",
+  "recentChangesHTML": "• Bug fixes and other improvements",
   "comments": [],
   "editorsChoice": false,
   "features": [],
@@ -153,9 +154,14 @@ Get reviews for a Google Play Store app with pagination support.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `appId` | string | Yes | Google Play package name |
-| `num` | integer | No | Number of reviews to fetch (default: 100, max: 150) |
+| `num` | integer | No | Reviews in this page (default: 100, max: 4500, one request). Large pages make large responses: prefer the default and paginate |
 | `nextPaginationToken` | string | No | Pagination token from previous response for getting next batch of reviews |
 | `sort` | string | No | Sort order: "newest", "rating", "helpfulness" (default: "newest") |
+| `score` | integer | No | Only reviews with this star rating, 1-5 (filtered by Google Play) |
+| `device` | string | No | Only reviews written on this form factor: "MOBILE", "TABLET", "WATCH", "CHROMEBOOK", "TV" (filtered by Google Play) |
+
+When paging with `nextPaginationToken`, pass the same `score` and `device` again: the token is a position, not a query.
+
 | `fullDetail` | boolean | No | Return full review details (default: false). When false, only essential fields are returned: id, userName, date, score, text, version |
 | `lang` | string | No | Language code (default: "en") |
 | `country` | string | No | Country code (default: "us") |
@@ -234,13 +240,15 @@ Search for apps in the Google Play Store. Returns up to 30 results per query (Go
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `query` | string | Yes | Search query (minimum 2 characters) |
-| `num` | integer | No | Number of results (1-30, default: 30). Google Play serves at most 30 results per query and has no further pages. |
+| `query` | string | Yes | Search query |
+| `num` | integer | No | Maximum results (1-250, default: 30). Most queries stop at Play's first page (~20-30 apps); some (single characters, digits, some app names) continue up to ~250 |
 | `lang` | string | No | Language code (default: "en") |
 | `country` | string | No | Country code (default: "us") |
 | `fullDetail` | boolean | No | Return full app details (default: false) |
 
-Without `fullDetail`, Play's result cards don't carry `developerId`: only the top result has it. Use `fullDetail: true` if you need it on every entry. Play serves at most 30 results per query; for more distinct apps, run related queries (e.g. terms from `google-play-suggest`, or other `country` values) and de-duplicate by `appId`.
+Without `fullDetail`, Play's result cards don't carry `developerId`: only the top result has it. Use `fullDetail: true` if you need it on every entry. For more distinct apps than one query returns, run related queries (e.g. terms from `google-play-suggest`, or other `country` values) and de-duplicate by `appId`.
+
+Summary results from `google-play-search`, `-list`, `-similar` and `-developer` leave out `descriptionHTML`: since google-play-scraper-ts 0.5.0 every result card carries it, and it is about 85% of the response. Pass `fullDetail: true` to get full app details, `descriptionHTML` included.
 
 #### Example Request
 
@@ -395,6 +403,24 @@ Get app data safety and privacy information.
 | `appId` | string | Yes | Google Play package name |
 | `lang` | string | No | Language code (default: "en") |
 
+### google-play-availability
+
+Check in which countries an app is offered on Google Play. One request per country (Play serves a page even where an app isn't published, so the server reads the listing's own availability flag). An unknown or removed app is `false` everywhere.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `appId` | string | Yes | Google Play package name |
+| `countries` | string[] | Yes | Two-letter country codes, 1-50 (e.g. `["us", "fr", "jp"]`) |
+| `lang` | string | No | Language code (default: "en") |
+
+#### Example Response
+
+```json
+{ "us": true, "fr": false }
+```
+
 ### google-play-categories
 
 Get list of available app categories.
@@ -431,6 +457,7 @@ Get detailed information about an Apple App Store app.
 | `country` | string | No | Country code (default: "us") |
 | `lang` | string | No | Language code for localized metadata (e.g., "fr", "en_us") |
 | `ratings` | boolean | No | Also fetch the ratings histogram and merge `ratings` and `histogram` into the result (one extra request, default: false) |
+| `inAppPurchases` | boolean | No | Also return the app's top in-app purchases (up to 10, as on its App Store page) in `inAppPurchases`: `title`, numeric `price`, `currency`, `formattedPrice`, `subscription`, `subscriptionPeriod` (ISO 8601, e.g. `P1M`), priced in the `country` storefront. One extra request; the call fails if it fails (default: false) |
 | `subtitle` | boolean | No | Also return the App Store subtitle (the tagline under the app name, e.g. "Spanish, French, Chess & Math") in `subtitle` (default: false). One extra request to Apple per 99 apps; in the `country` storefront's language; omitted when the app has none or the extra request fails |
 
 #### Example Request
@@ -510,7 +537,7 @@ Get reviews for an Apple App Store app. Apple serves at most 10 pages of about 5
 | `page` | integer | No | Page number, 1-10 (default: 1) |
 | `sort` | string | No | Sort order: "newest" (most recent) or "helpfulness" (most helpful) (default: "newest") |
 | `country` | string | No | Country code (default: "us") |
-| `fullDetail` | boolean | No | Return full review details (default: false). When false, only essential fields are returned: id, version, userName, score, title, text, updated |
+| `fullDetail` | boolean | No | Return full review details (default: false). When false, only essential fields are returned: id, version, userName, score, title, text, updated, voteSum (helpful minus not-helpful votes), voteCount |
 
 #### Example Request
 
@@ -575,7 +602,7 @@ Search for apps in the Apple App Store. Use `num` as the page size and `page` to
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `query` | string | Yes | Search query (minimum 2 characters) |
+| `query` | string | Yes | Search query |
 | `num` | integer | No | Results per page (1-100, default: 50) |
 | `page` | integer | No | Page number (default: 1); page N returns results (N-1)*num+1 to N*num |
 | `country` | string | No | Country code (default: "us") |
@@ -698,6 +725,8 @@ Get detailed app privacy information and policies.
 |-----------|------|----------|-------------|
 | `id` | string | Yes | Apple App Store numeric ID |
 | `country` | string | No | Country code (default: "us") |
+
+The response includes `privacyPolicyUrl`, the developer's privacy policy link (or `null`).
 
 #### Example Request
 

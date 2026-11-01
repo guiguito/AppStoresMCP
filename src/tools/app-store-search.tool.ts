@@ -26,8 +26,8 @@ export class AppStoreSearchTool implements MCPTool {
     properties: {
       query: {
         type: 'string',
-        description: 'Search query string (minimum 2 characters)',
-        minLength: 2
+        description: 'Search query string',
+        minLength: 1
       },
       num: {
         type: 'integer',

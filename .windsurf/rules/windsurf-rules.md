@@ -6,7 +6,7 @@ trigger: always_on
 
 ## Project Overview
 - This is a **TypeScript/Node.js MCP (Model Context Protocol) server** for app store scraping
-- Provides 19 MCP tools for Google Play Store and Apple App Store data access
+- Provides 20 MCP tools for Google Play Store and Apple App Store data access
 - Uses Express for HTTP server with dual transport support (HTTP and SSE)
 - Experimental status project - focus on stability and maintainability over new features
 

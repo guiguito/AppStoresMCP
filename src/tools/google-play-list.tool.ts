@@ -5,7 +5,8 @@
 import gplay, { type ListOptions } from 'google-play-scraper-ts';
 import { JSONSchema7 } from 'json-schema';
 import { MCPTool } from '../types/mcp';
-import { country, fullDetail, lang } from './common';
+import { omitFields, PLAY_SUMMARY_OMIT } from '../utils/response-filter';
+import { country, lang, playFullDetail } from './common';
 
 interface GooglePlayListParams {
   collection?: ListOptions['collection'];
@@ -62,14 +63,14 @@ export class GooglePlayListTool implements MCPTool {
       },
       lang: lang('en'),
       country,
-      fullDetail
+      fullDetail: playFullDetail
     },
     additionalProperties: false
   };
 
   async execute(params: GooglePlayListParams = {}): Promise<unknown> {
     const ages = gplay.age as Record<string, string>;
-    return gplay.list({
+    const results = await gplay.list({
       collection: params.collection || gplay.collection.TOP_FREE,
       ...(params.category ? { category: params.category } : {}),
       // ponytail: the schema enum limits age to the library's keys or values, so the lookup is total
@@ -79,5 +80,6 @@ export class GooglePlayListTool implements MCPTool {
       country: params.country || 'us',
       fullDetail: params.fullDetail || false
     });
+    return params.fullDetail ? results : omitFields(results, PLAY_SUMMARY_OMIT);
   }
 }

@@ -31,7 +31,9 @@ const APP_STORE_REVIEW_ESSENTIAL_FIELDS = [
   'score',
   'title',
   'text',
-  'updated'
+  'updated',
+  'voteSum',
+  'voteCount'
 ];
 
 /**
@@ -47,6 +49,30 @@ const GOOGLE_PLAY_REVIEW_ESSENTIAL_FIELDS = [
 ];
 
 type JsonObject = Record<string, unknown>;
+
+/**
+ * Drop `fields` from every object in a list. Used on Google Play summary results: since
+ * google-play-scraper-ts 0.5.0 each result card carries the full `descriptionHTML`, about 85%
+ * of the payload. Callers who need it can ask for fullDetail (which returns it anyway).
+ */
+export function omitFields(list: unknown, fields: string[]): unknown {
+  if (!Array.isArray(list)) {
+    return list;
+  }
+  return list.map(item => {
+    if (!item || typeof item !== 'object') {
+      return item;
+    }
+    const copy: JsonObject = { ...(item as JsonObject) };
+    for (const field of fields) {
+      delete copy[field];
+    }
+    return copy;
+  });
+}
+
+/** Summary fields stripped from Google Play search/list/similar/developer results unless fullDetail is set. */
+export const PLAY_SUMMARY_OMIT = ['descriptionHTML'];
 
 /**
  * Keep only `fields` of an object; non-objects pass through untouched

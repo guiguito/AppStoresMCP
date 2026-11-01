@@ -35,7 +35,7 @@ describe('MCPServer integration', () => {
     expect(notif.text).toBe('');
 
     const list = await rpc(app, 'tools/list');
-    expect(list.body.result.tools).toHaveLength(19);
+    expect(list.body.result.tools).toHaveLength(20);
 
     const call = await rpc(app, 'tools/call', { name: 'google-play-categories', arguments: {} });
     expect(call.status).toBe(200);
@@ -54,7 +54,7 @@ describe('MCPServer integration', () => {
     server = new MCPServer(config({ disabledTools: new Set(['app-store-privacy']) }));
     await server.start();
     const names = (await rpc(server.getHttpTransport().getApp(), 'tools/list')).body.result.tools.map((t: any) => t.name);
-    expect(names).toHaveLength(18);
+    expect(names).toHaveLength(19);
     expect(names).not.toContain('app-store-privacy');
 
     await server.stop();

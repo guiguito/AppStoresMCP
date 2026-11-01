@@ -8,6 +8,7 @@ export const { constants } = jest.requireActual('../../node_modules/google-play-
 const mock = {
   ...constants,
   app: jest.fn(),
+  availability: jest.fn(),
   reviews: jest.fn(),
   search: jest.fn(),
   categories: jest.fn(),

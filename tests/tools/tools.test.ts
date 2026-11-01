@@ -1,5 +1,5 @@
 /**
- * Table-driven tests for all 19 MCP tools.
+ * Table-driven tests for all 20 MCP tools.
  * The bare library names are mapped to tests/__mocks__ (jest.config.js), so the real
  * libraries are required by path to check schema enums against their actual constants.
  */
@@ -20,6 +20,7 @@ import { AppStoreSimilarTool } from '../../src/tools/app-store-similar.tool';
 import { AppStoreSuggestTool } from '../../src/tools/app-store-suggest.tool';
 import { GooglePlayAppDetailsTool } from '../../src/tools/google-play-app-details.tool';
 import { GooglePlayAppReviewsTool } from '../../src/tools/google-play-app-reviews.tool';
+import { GooglePlayAvailabilityTool } from '../../src/tools/google-play-availability.tool';
 import { GooglePlayCategoriesTool } from '../../src/tools/google-play-categories.tool';
 import { GooglePlayDataSafetyTool } from '../../src/tools/google-play-datasafety.tool';
 import { GooglePlayDeveloperTool } from '../../src/tools/google-play-developer.tool';
@@ -66,6 +67,10 @@ describe('schema enums match the real library constants', () => {
     for (const a of enumOf(new GooglePlayListTool(), 'age')) expect(valid).toContain(a);
   });
 
+  it('google-play-app-reviews device = library device keys', () => {
+    expect([...enumOf(new GooglePlayAppReviewsTool(), 'device')].sort()).toEqual(Object.keys(realPlay.device).sort());
+  });
+
   it('review sort enums map onto real library sort constants', () => {
     expect(enumOf(new AppStoreAppReviewsTool(), 'sort')).toEqual(['newest', 'helpfulness']);
     expect(Object.values(realStore.constants.sort)).toEqual(expect.arrayContaining(['mostRecent', 'mostHelpful']));
@@ -109,7 +114,19 @@ describe('schemas', () => {
     expect(valid(new AppStoreListTool(), { num: 200 })).toBe(true);
     expect(valid(new AppStoreListTool(), { num: 201 })).toBe(false);
     expect(valid(new AppStoreAppReviewsTool(), { appId: '1', page: 11 })).toBe(false);
-    expect(valid(new GooglePlaySearchTool(), { query: 'abc', num: 31 })).toBe(false);
+    // 0.5.0: single-character and digit queries are the ones Play paginates past the first page
+    expect(valid(new GooglePlaySearchTool(), { query: 'a' })).toBe(true);
+    expect(valid(new AppStoreSearchTool(), { query: '7' })).toBe(true);
+    expect(valid(new GooglePlaySearchTool(), { query: '' })).toBe(false);
+    expect(valid(new GooglePlaySearchTool(), { query: 'abc', num: 250 })).toBe(true);
+    expect(valid(new GooglePlaySearchTool(), { query: 'abc', num: 251 })).toBe(false);
+    expect(valid(new GooglePlayAppReviewsTool(), { appId: 'com.whatsapp', num: 4500 })).toBe(true);
+    expect(valid(new GooglePlayAppReviewsTool(), { appId: 'com.whatsapp', num: 4501 })).toBe(false);
+    expect(valid(new GooglePlayAppReviewsTool(), { appId: 'com.whatsapp', score: 6 })).toBe(false);
+    expect(valid(new GooglePlayAvailabilityTool(), { appId: 'com.venmo', countries: [] })).toBe(false);
+    expect(valid(new GooglePlayAvailabilityTool(), { appId: 'com.venmo', countries: ['usa'] })).toBe(false);
+    expect(valid(new GooglePlayAvailabilityTool(), { appId: 'com.venmo', countries: Array(51).fill('us') })).toBe(false);
+    expect(valid(new GooglePlayAvailabilityTool(), { appId: 'com.venmo', countries: ['us', 'FR'] })).toBe(true);
     expect(valid(new GooglePlayListTool(), { num: 500 })).toBe(true);
     expect(valid(new GooglePlayDeveloperTool(), { devId: 'x', nextPaginationToken: 't' })).toBe(false);
     expect(valid(new AppStoreDeveloperTool(), { devId: 'Supercell' })).toBe(false);
@@ -124,6 +141,8 @@ describe('execute forwards the expected library options', () => {
       asMock, 'app', { appId: 'com.example.app', country: 'us' }],
     ['app-store-app-details subtitle', new AppStoreAppDetailsTool(), { appId: '1', subtitle: true },
       asMock, 'app', { id: '1', country: 'us', subtitle: true }],
+    ['app-store-app-details inAppPurchases', new AppStoreAppDetailsTool(), { appId: 'com.example.app', inAppPurchases: true },
+      asMock, 'app', { appId: 'com.example.app', country: 'us', inAppPurchases: true }],
     ['app-store-app-reviews', new AppStoreAppReviewsTool(), { appId: 'com.example.app', sort: 'helpfulness', page: 3 },
       asMock, 'reviews', { appId: 'com.example.app', page: 3, sort: 'mostHelpful', country: 'us' }],
     ['app-store-app-reviews default sort', new AppStoreAppReviewsTool(), { appId: '1' },
@@ -154,6 +173,10 @@ describe('execute forwards the expected library options', () => {
       gpMock, 'app', { appId: 'com.whatsapp', lang: 'en', country: 'us' }],
     ['google-play-app-reviews', new GooglePlayAppReviewsTool(), { appId: 'com.whatsapp', sort: 'rating', nextPaginationToken: 'tok' },
       gpMock, 'reviews', { appId: 'com.whatsapp', num: 100, sort: realPlay.sort.RATING, lang: 'en', country: 'us', paginate: true, nextPaginationToken: 'tok' }],
+    ['google-play-app-reviews filters', new GooglePlayAppReviewsTool(), { appId: 'com.whatsapp', score: 1, device: 'TABLET', num: 4500 },
+      gpMock, 'reviews', { appId: 'com.whatsapp', num: 4500, sort: realPlay.sort.NEWEST, lang: 'en', country: 'us', paginate: true, score: 1, device: realPlay.device.TABLET }],
+    ['google-play-availability', new GooglePlayAvailabilityTool(), { appId: 'com.venmo', countries: ['us', 'fr'] },
+      gpMock, 'availability', { appId: 'com.venmo', countries: ['us', 'fr'], lang: 'en' }],
     ['google-play-categories', new GooglePlayCategoriesTool(), {}, gpMock, 'categories', undefined],
     ['google-play-datasafety', new GooglePlayDataSafetyTool(), { appId: 'com.whatsapp' },
       gpMock, 'datasafety', { appId: 'com.whatsapp', lang: 'en' }],
@@ -179,7 +202,23 @@ describe('execute forwards the expected library options', () => {
   });
 
   it('covers every tool', () => {
-    expect(new Set(cases.map(c => c[1].name)).size).toBe(19);
+    expect(new Set(cases.map(c => c[1].name)).size).toBe(20);
+  });
+});
+
+describe('Google Play summary results drop descriptionHTML (~85% of the payload since 0.5.0)', () => {
+  const card = { appId: 'com.a', title: 'A', summary: 's', descriptionHTML: '<b>long</b>' };
+  const tools: Array<[MCPTool, string, any]> = [
+    [new GooglePlaySearchTool(), 'search', { query: 'notes' }],
+    [new GooglePlayListTool(), 'list', {}],
+    [new GooglePlaySimilarTool(), 'similar', { appId: 'com.whatsapp' }],
+    [new GooglePlayDeveloperTool(), 'developer', { devId: 'Google LLC' }],
+  ];
+
+  it.each(tools)('%s strips it by default and keeps it with fullDetail', async (tool, fn, params) => {
+    gpMock[fn]!.mockResolvedValue([card]);
+    expect(await tool.execute(params)).toEqual([{ appId: 'com.a', title: 'A', summary: 's' }]);
+    expect(await tool.execute({ ...params, fullDetail: true })).toEqual([card]);
   });
 });
 
