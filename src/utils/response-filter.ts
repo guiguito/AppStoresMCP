@@ -9,6 +9,7 @@ const ESSENTIAL_FIELDS = [
   'id',
   'appId',
   'title',
+  'subtitle',
   'url',
   'price',
   'score',

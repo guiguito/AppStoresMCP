@@ -61,6 +61,8 @@ Get detailed information about a Google Play Store app.
 | `lang` | string | No | Language code (default: "en") |
 | `country` | string | No | Country code (default: "us") |
 
+`released` is Play's localized date text (e.g. "May 27, 2014", or "27 mai 2014" with `lang: "fr"`); use `releasedTimestamp` (ms since epoch) to sort or compare. `developerId` is the decoded developer id (e.g. "Spotify AB" or "5700313618786177705") and can be passed as-is to `google-play-developer`.
+
 #### Example Request
 
 ```json
@@ -131,6 +133,7 @@ Get detailed information about a Google Play Store app.
   "contentRatingDescription": undefined,
   "adSupported": false,
   "released": "May 3, 2009",
+  "releasedTimestamp": 1241334000000,
   "updated": 1704067200000,
   "version": "2.23.24.14",
   "recentChanges": "• Bug fixes and other improvements",
@@ -237,6 +240,8 @@ Search for apps in the Google Play Store. Returns up to 30 results per query (Go
 | `country` | string | No | Country code (default: "us") |
 | `fullDetail` | boolean | No | Return full app details (default: false) |
 
+Without `fullDetail`, Play's result cards don't carry `developerId`: only the top result has it. Use `fullDetail: true` if you need it on every entry. Play serves at most 30 results per query; for more distinct apps, run related queries (e.g. terms from `google-play-suggest`, or other `country` values) and de-duplicate by `appId`.
+
 #### Example Request
 
 ```json
@@ -336,7 +341,7 @@ Get apps by a specific developer (returns a plain array, no pagination).
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `devId` | string | Yes | Developer ID: numeric ID or developer name as in the Play Store URL (e.g., "Google LLC") |
+| `devId` | string | Yes | Developer ID, numeric or a name, exactly as returned in `developerId` by `google-play-app-details` (e.g., "Google LLC", "5700313618786177705") |
 | `lang` | string | No | Language code (default: "en") |
 | `country` | string | No | Country code (default: "us") |
 | `num` | integer | No | Maximum number of apps (1-100, default: 50) |
@@ -426,6 +431,7 @@ Get detailed information about an Apple App Store app.
 | `country` | string | No | Country code (default: "us") |
 | `lang` | string | No | Language code for localized metadata (e.g., "fr", "en_us") |
 | `ratings` | boolean | No | Also fetch the ratings histogram and merge `ratings` and `histogram` into the result (one extra request, default: false) |
+| `subtitle` | boolean | No | Also return the App Store subtitle (the tagline under the app name, e.g. "Spanish, French, Chess & Math") in `subtitle` (default: false). One extra request to Apple per 99 apps; in the `country` storefront's language; omitted when the app has none or the extra request fails |
 
 #### Example Request
 
@@ -563,7 +569,7 @@ To get the next page of reviews, increment the `page` parameter (up to 10):
 
 ### app-store-search
 
-Search for apps in the Apple App Store. Use `num` as the page size and `page` to fetch further pages. Results are trimmed to essential fields (id, appId, title, url, price, score, reviews, primaryGenre, developer, developerId, icon, free).
+Search for apps in the Apple App Store. Use `num` as the page size and `page` to fetch further pages. Results are trimmed to essential fields (id, appId, title, subtitle, url, price, score, reviews, primaryGenre, developer, developerId, icon, free); `subtitle` is only present with `subtitle: true`.
 
 #### Parameters
 
@@ -574,6 +580,7 @@ Search for apps in the Apple App Store. Use `num` as the page size and `page` to
 | `page` | integer | No | Page number (default: 1); page N returns results (N-1)*num+1 to N*num |
 | `country` | string | No | Country code (default: "us") |
 | `lang` | string | No | Language code (e.g., "en-us") |
+| `subtitle` | boolean | No | Also return the App Store subtitle (the tagline under the app name, e.g. "Spanish, French, Chess & Math") in `subtitle` (default: false). One extra request to Apple per 99 apps; in the `country` storefront's language; omitted when the app has none or the extra request fails |
 
 #### Example Request
 
@@ -648,6 +655,7 @@ Get app lists from Apple App Store collections and categories. Returns up to 200
 | `lang` | string | No | Language code (default: "en") |
 | `num` | integer | No | Number of results (1-200, default: 50). No pagination available - increase this value to get more results. |
 | `fullDetail` | boolean | No | Return full app details (default: false) |
+| `subtitle` | boolean | No | Also return the App Store subtitle (the tagline under the app name, e.g. "Spanish, French, Chess & Math") in `subtitle` (default: false). One extra request to Apple per 99 apps; in the `country` storefront's language; omitted when the app has none or the extra request fails Requires `fullDetail: true` (rejected otherwise) |
 
 #### Example Request
 
@@ -678,6 +686,7 @@ Get all apps by a specific developer.
 | `devId` | string | Yes | Numeric developer (artist) ID, e.g. "284882218" (the `developerId` field of app results). Names are not supported. |
 | `country` | string | No | Country code (default: "us") |
 | `lang` | string | No | Language code (default: "en") |
+| `subtitle` | boolean | No | Also return the App Store subtitle (the tagline under the app name, e.g. "Spanish, French, Chess & Math") in `subtitle` (default: false). One extra request to Apple per 99 apps; in the `country` storefront's language; omitted when the app has none or the extra request fails |
 
 ### app-store-privacy
 
@@ -728,6 +737,7 @@ Find apps similar to a given app.
 | `appId` | string | Yes | Numeric App Store ID or bundle ID |
 | `country` | string | No | Country code (default: "us") |
 | `lang` | string | No | Language code for localized metadata |
+| `subtitle` | boolean | No | Also return the App Store subtitle (the tagline under the app name, e.g. "Spanish, French, Chess & Math") in `subtitle` (default: false). One extra request to Apple per 99 apps; in the `country` storefront's language; omitted when the app has none or the extra request fails |
 
 ### app-store-ratings
 

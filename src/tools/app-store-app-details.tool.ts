@@ -5,12 +5,13 @@
 import * as store from 'app-store-scraper-ts';
 import { JSONSchema7 } from 'json-schema';
 import { MCPTool } from '../types/mcp';
-import { appStoreAppId, appStoreIdOption, country, lang } from './common';
+import { appStoreAppId, appStoreIdOption, country, lang, subtitle } from './common';
 
 interface AppStoreAppDetailsParams {
   appId: string;
   country?: string;
   lang?: string;
+  subtitle?: boolean;
   ratings?: boolean;
 }
 
@@ -28,7 +29,8 @@ export class AppStoreAppDetailsTool implements MCPTool {
         type: 'boolean',
         description: 'Also fetch the ratings histogram and merge `ratings`/`histogram` into the result (one extra request, default: false)',
         default: false
-      }
+      },
+      subtitle
     },
     required: ['appId'],
     additionalProperties: false
@@ -39,6 +41,7 @@ export class AppStoreAppDetailsTool implements MCPTool {
       ...appStoreIdOption(params.appId),
       country: params.country || 'us',
       ...(params.lang ? { lang: params.lang } : {}),
+      ...(params.subtitle ? { subtitle: true } : {}),
       ...(params.ratings ? { ratings: true } : {})
     });
   }

@@ -6,7 +6,7 @@ import * as store from 'app-store-scraper-ts';
 import { JSONSchema7 } from 'json-schema';
 import { MCPTool } from '../types/mcp';
 import { filterAppData } from '../utils/response-filter';
-import { country, lang } from './common';
+import { country, lang, subtitle } from './common';
 
 interface AppStoreSearchParams {
   query: string;
@@ -14,6 +14,7 @@ interface AppStoreSearchParams {
   page?: number;
   country?: string;
   lang?: string;
+  subtitle?: boolean;
 }
 
 export class AppStoreSearchTool implements MCPTool {
@@ -42,7 +43,8 @@ export class AppStoreSearchTool implements MCPTool {
         default: 1
       },
       country,
-      lang: lang()
+      lang: lang(),
+      subtitle
     },
     required: ['query'],
     additionalProperties: false
@@ -54,7 +56,8 @@ export class AppStoreSearchTool implements MCPTool {
       num: params.num || 50,
       page: params.page || 1,
       country: params.country || 'us',
-      ...(params.lang ? { lang: params.lang } : {})
+      ...(params.lang ? { lang: params.lang } : {}),
+      ...(params.subtitle ? { subtitle: true } : {})
     });
     return filterAppData(results, false);
   }

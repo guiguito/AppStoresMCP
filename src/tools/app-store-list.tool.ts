@@ -6,7 +6,7 @@ import * as store from 'app-store-scraper-ts';
 import type { ListOptions } from 'app-store-scraper-ts';
 import { JSONSchema7 } from 'json-schema';
 import { MCPTool } from '../types/mcp';
-import { country, fullDetail, lang } from './common';
+import { country, fullDetail, lang, subtitle } from './common';
 
 interface AppStoreListParams {
   collection?: ListOptions['collection'];
@@ -15,6 +15,7 @@ interface AppStoreListParams {
   lang?: string;
   num?: number;
   fullDetail?: boolean;
+  subtitle?: boolean;
 }
 
 export class AppStoreListTool implements MCPTool {
@@ -67,12 +68,17 @@ export class AppStoreListTool implements MCPTool {
         maximum: 200,
         default: 50
       },
-      fullDetail
+      fullDetail,
+      subtitle: { ...subtitle, description: `${subtitle.description} Requires fullDetail: true (RSS list entries are not looked up).` }
     },
     additionalProperties: false
   };
 
   async execute(params: AppStoreListParams = {}): Promise<unknown> {
+    if (params.subtitle && !params.fullDetail) {
+      // The library would silently ignore it; say so instead of returning apps without subtitles
+      throw new Error('subtitle requires fullDetail: true (list entries without fullDetail are not looked up)');
+    }
     const categories = store.constants.category as Record<string, NonNullable<ListOptions['category']>>;
     return store.list({
       collection: params.collection || store.constants.collection.TOP_FREE_IOS,
@@ -80,7 +86,8 @@ export class AppStoreListTool implements MCPTool {
       country: params.country || 'us',
       lang: params.lang || 'en',
       num: params.num || 50,
-      fullDetail: params.fullDetail || false
+      fullDetail: params.fullDetail || false,
+      ...(params.subtitle ? { subtitle: true } : {})
     });
   }
 }

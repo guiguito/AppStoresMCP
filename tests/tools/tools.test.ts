@@ -97,6 +97,14 @@ describe('schemas', () => {
     expect(valid(new GooglePlaySearchTool(), { query: 'abc', lang: 'english' })).toBe(false);
   });
 
+  it('subtitle is offered exactly on the App Store tools whose library methods support it', () => {
+    const withSubtitle = [new AppStoreAppDetailsTool(), new AppStoreSearchTool(), new AppStoreDeveloperTool(), new AppStoreSimilarTool(), new AppStoreListTool()];
+    for (const tool of withSubtitle) expect(Object.keys(tool.inputSchema.properties!)).toContain('subtitle');
+    for (const tool of [new AppStoreAppReviewsTool(), new AppStoreRatingsTool(), new AppStorePrivacyTool(), new AppStoreSuggestTool(), new GooglePlayAppDetailsTool()]) {
+      expect(Object.keys(tool.inputSchema.properties!)).not.toContain('subtitle');
+    }
+  });
+
   it('limits match library caps', () => {
     expect(valid(new AppStoreListTool(), { num: 200 })).toBe(true);
     expect(valid(new AppStoreListTool(), { num: 201 })).toBe(false);
@@ -114,22 +122,32 @@ describe('execute forwards the expected library options', () => {
       asMock, 'app', { id: '553834731', country: 'us', lang: 'fr', ratings: true }],
     ['app-store-app-details bundle', new AppStoreAppDetailsTool(), { appId: 'com.example.app' },
       asMock, 'app', { appId: 'com.example.app', country: 'us' }],
+    ['app-store-app-details subtitle', new AppStoreAppDetailsTool(), { appId: '1', subtitle: true },
+      asMock, 'app', { id: '1', country: 'us', subtitle: true }],
     ['app-store-app-reviews', new AppStoreAppReviewsTool(), { appId: 'com.example.app', sort: 'helpfulness', page: 3 },
       asMock, 'reviews', { appId: 'com.example.app', page: 3, sort: 'mostHelpful', country: 'us' }],
     ['app-store-app-reviews default sort', new AppStoreAppReviewsTool(), { appId: '1' },
       asMock, 'reviews', { id: '1', page: 1, sort: 'mostRecent', country: 'us' }],
     ['app-store-developer', new AppStoreDeveloperTool(), { devId: '284882218' },
       asMock, 'developer', { devId: '284882218', country: 'us', lang: 'en' }],
+    ['app-store-developer subtitle', new AppStoreDeveloperTool(), { devId: '284882218', subtitle: true },
+      asMock, 'developer', { devId: '284882218', country: 'us', lang: 'en', subtitle: true }],
     ['app-store-list', new AppStoreListTool(), { category: 'GAMES', num: 200 },
       asMock, 'list', { collection: 'topfreeapplications', category: 6014, country: 'us', lang: 'en', num: 200, fullDetail: false }],
+    ['app-store-list subtitle', new AppStoreListTool(), { fullDetail: true, subtitle: true },
+      asMock, 'list', { collection: 'topfreeapplications', country: 'us', lang: 'en', num: 50, fullDetail: true, subtitle: true }],
     ['app-store-privacy', new AppStorePrivacyTool(), { id: '1', country: 'fr' },
       asMock, 'privacy', { id: '1', country: 'fr' }],
     ['app-store-ratings', new AppStoreRatingsTool(), { id: '1' },
       asMock, 'ratings', { id: '1', country: 'us' }],
     ['app-store-search', new AppStoreSearchTool(), { query: 'notes', page: 2, num: 10, lang: 'en-us' },
       asMock, 'search', { term: 'notes', num: 10, page: 2, country: 'us', lang: 'en-us' }],
+    ['app-store-search subtitle', new AppStoreSearchTool(), { query: 'notes', subtitle: true },
+      asMock, 'search', { term: 'notes', num: 50, page: 1, country: 'us', subtitle: true }],
     ['app-store-similar', new AppStoreSimilarTool(), { appId: 'com.example.app', lang: 'de' },
       asMock, 'similar', { appId: 'com.example.app', country: 'us', lang: 'de' }],
+    ['app-store-similar subtitle', new AppStoreSimilarTool(), { appId: '1', subtitle: true },
+      asMock, 'similar', { id: '1', country: 'us', subtitle: true }],
     ['app-store-suggest', new AppStoreSuggestTool(), { term: 'pan' },
       asMock, 'suggest', { term: 'pan', country: 'us' }],
     ['google-play-app-details', new GooglePlayAppDetailsTool(), { appId: 'com.whatsapp' },
@@ -162,6 +180,14 @@ describe('execute forwards the expected library options', () => {
 
   it('covers every tool', () => {
     expect(new Set(cases.map(c => c[1].name)).size).toBe(19);
+  });
+});
+
+describe('app-store-list subtitle without fullDetail', () => {
+  it('is rejected instead of silently ignored by the library', async () => {
+    asMock.list!.mockClear();
+    await expect(new AppStoreListTool().execute({ subtitle: true })).rejects.toThrow('fullDetail');
+    expect(asMock.list).not.toHaveBeenCalled();
   });
 });
 

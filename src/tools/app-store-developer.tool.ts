@@ -5,12 +5,13 @@
 import * as store from 'app-store-scraper-ts';
 import { JSONSchema7 } from 'json-schema';
 import { MCPTool } from '../types/mcp';
-import { country, lang } from './common';
+import { country, lang, subtitle } from './common';
 
 interface AppStoreDeveloperParams {
   devId: string;
   country?: string;
   lang?: string;
+  subtitle?: boolean;
 }
 
 export class AppStoreDeveloperTool implements MCPTool {
@@ -26,7 +27,8 @@ export class AppStoreDeveloperTool implements MCPTool {
         pattern: '^\\d+$'
       },
       country,
-      lang: lang('en')
+      lang: lang('en'),
+      subtitle
     },
     required: ['devId'],
     additionalProperties: false
@@ -36,7 +38,8 @@ export class AppStoreDeveloperTool implements MCPTool {
     return store.developer({
       devId: params.devId,
       country: params.country || 'us',
-      lang: params.lang || 'en'
+      lang: params.lang || 'en',
+      ...(params.subtitle ? { subtitle: true } : {})
     });
   }
 }

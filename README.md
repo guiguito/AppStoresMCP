@@ -73,7 +73,7 @@ The server exposes 19 comprehensive MCP tools for complete app store data access
 2. **`google-play-app-reviews`** - Fetch app reviews with pagination and sorting options
 3. **`google-play-search`** - Search for apps (up to 30 results; Play serves no more per query)
 4. **`google-play-list`** - Get app lists from collections (TOP_FREE, TOP_PAID, GROSSING) and categories (up to 500 results)
-5. **`google-play-developer`** - Get all apps by a specific developer with pagination
+5. **`google-play-developer`** - Get all apps by a developer (pass the `developerId` from app details)
 6. **`google-play-suggest`** - Get search suggestions for app discovery
 7. **`google-play-similar`** - Find apps similar to a given app
 8. **`google-play-permissions`** - Get detailed app permissions information
@@ -93,6 +93,8 @@ The server exposes 19 comprehensive MCP tools for complete app store data access
 9. **`app-store-ratings`** - Get detailed ratings breakdown and statistics
 
 All tools return raw, unmodified data from the underlying scraping libraries to preserve complete information and metadata.
+
+App Store `app-details`, `search`, `list` (with `fullDetail`), `developer` and `similar` accept `subtitle: true` to also return each app's App Store subtitle (one extra request to Apple per 99 apps).
 
 ## Tool Configuration
 

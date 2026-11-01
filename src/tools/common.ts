@@ -26,6 +26,13 @@ export const fullDetail: JSONSchema7 = {
   default: false
 };
 
+/** App Store only: Apple's lookup API has no subtitle, so the library fetches it from the catalog API on request. */
+export const subtitle: JSONSchema7 = {
+  type: 'boolean',
+  description: 'Also return each app\'s App Store subtitle (the short tagline under the name, e.g. "Spanish, French, Chess & Math") in `subtitle` (default: false). Costs one extra request to Apple per 99 apps; the subtitle is in the `country` storefront\'s language and is omitted when the app has none or the extra request fails.',
+  default: false
+};
+
 export const googlePlayAppId: JSONSchema7 = {
   type: 'string',
   description: 'The Google Play Store app ID (package name, e.g., com.example.app)',

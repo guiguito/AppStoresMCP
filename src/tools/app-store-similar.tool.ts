@@ -5,12 +5,13 @@
 import * as store from 'app-store-scraper-ts';
 import { JSONSchema7 } from 'json-schema';
 import { MCPTool } from '../types/mcp';
-import { appStoreAppId, appStoreIdOption, country, lang } from './common';
+import { appStoreAppId, appStoreIdOption, country, lang, subtitle } from './common';
 
 interface AppStoreSimilarParams {
   appId: string;
   country?: string;
   lang?: string;
+  subtitle?: boolean;
 }
 
 export class AppStoreSimilarTool implements MCPTool {
@@ -22,7 +23,8 @@ export class AppStoreSimilarTool implements MCPTool {
     properties: {
       appId: appStoreAppId,
       country,
-      lang: lang()
+      lang: lang(),
+      subtitle
     },
     required: ['appId'],
     additionalProperties: false
@@ -32,7 +34,8 @@ export class AppStoreSimilarTool implements MCPTool {
     return store.similar({
       ...appStoreIdOption(params.appId),
       country: params.country || 'us',
-      ...(params.lang ? { lang: params.lang } : {})
+      ...(params.lang ? { lang: params.lang } : {}),
+      ...(params.subtitle ? { subtitle: true } : {})
     });
   }
 }
