@@ -5,7 +5,7 @@
  * token consumption by up to 93% while preserving essential review data.
  */
 
-const fetch = require('node-fetch');
+// Uses Node's built-in fetch (Node 18+)
 
 const MCP_SERVER_URL = 'http://localhost:3000/mcp';
 

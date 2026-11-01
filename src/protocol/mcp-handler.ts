@@ -7,7 +7,7 @@ import { ToolRegistry } from '../registry/tool-registry';
 import { validateToolParams } from '../utils/validation';
 import { ErrorHandler } from '../errors/error-handler';
 import { RetryHandler } from '../errors/retry-handler';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'crypto';
 
 /**
  * MCP Protocol Handler class processes MCP messages and manages tool execution

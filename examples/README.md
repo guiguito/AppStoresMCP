@@ -118,7 +118,7 @@ A comprehensive SSE (Server-Sent Events) client demonstrating the fixed SSE tran
 **Usage:**
 ```bash
 # Install required dependencies
-npm install eventsource node-fetch
+npm install eventsource
 
 # Make sure the MCP server is running with SSE transport enabled
 SSE_AUTO_INITIALIZE=true npm start

@@ -1,5 +1,5 @@
 # Multi-stage build for TypeScript compilation
-FROM node:18-alpine AS builder
+FROM node:24-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -18,7 +18,7 @@ COPY tsconfig.json ./
 RUN npm run build
 
 # Development stage for testing
-FROM node:18-alpine AS development
+FROM node:24-alpine AS development
 
 # Install curl for health checks
 RUN apk add --no-cache curl
@@ -52,7 +52,7 @@ HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
 CMD ["npm", "run", "dev"]
 
 # Production stage
-FROM node:18-alpine AS production
+FROM node:24-alpine AS production
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -65,7 +65,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install only production dependencies
-RUN npm ci --only=production && \
+RUN npm ci --omit=dev && \
     npm cache clean --force
 
 # Copy built application from builder stage

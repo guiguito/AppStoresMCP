@@ -23,7 +23,7 @@ A comprehensive Node.js TypeScript MCP (Model Context Protocol) server that prov
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 20.18+
 - npm or yarn
 - Docker (optional, for containerized deployment)
 

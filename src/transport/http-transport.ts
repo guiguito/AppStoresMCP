@@ -6,7 +6,7 @@
 import express, { Request, Response, NextFunction, RequestHandler, ErrorRequestHandler } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'crypto';
 import * as http from 'http';
 import * as https from 'https';
 import * as fs from 'fs';

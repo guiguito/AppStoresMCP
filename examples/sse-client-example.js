@@ -14,7 +14,7 @@
  */
 
 const EventSource = require('eventsource'); // npm install eventsource
-const fetch = require('node-fetch'); // npm install node-fetch
+// Uses Node's built-in fetch (Node 18+)
 
 class SSEMCPClient {
   constructor(baseUrl = 'http://localhost:3000') {

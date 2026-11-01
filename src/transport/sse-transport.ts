@@ -4,7 +4,7 @@
  */
 
 import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'crypto';
 import { MCPRequest, MCPResponse, MCPErrorCode } from '../types/mcp';
 
 /**
