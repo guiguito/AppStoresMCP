@@ -10,6 +10,7 @@ describe('Response Filter Utils', () => {
     id: 553834731,
     appId: 'com.example.app',
     title: 'Example App',
+    subtitle: 'Do things faster',
     url: 'https://example.com',
     price: 0,
     score: 4.5,
@@ -40,6 +41,7 @@ describe('Response Filter Utils', () => {
       // Should keep essential fields
       expect(result.id).toBe(553834731);
       expect(result.title).toBe('Example App');
+      expect(result.subtitle).toBe('Do things faster'); // only present when subtitle: true was requested
       expect(result.score).toBe(4.5);
       expect(result.reviews).toBe(1000);
       expect(result.primaryGenre).toBe('Productivity');
