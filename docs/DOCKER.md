@@ -43,6 +43,9 @@ The following environment variables can be used to configure the server:
 | `NODE_ENV` | `production` | Node.js environment |
 | `PORT` | `3000` | Server port |
 | `CORS_ORIGINS` | _(none)_ | Comma-separated allowed browser origins, or `*`. Unset: no CORS headers and requests with a non-allowed `Origin` header get 403 (requests without `Origin` always pass) |
+| `RATE_LIMIT_MAX_REQUESTS` | `100` | Max requests per client IP per window on `/mcp` and `/sse`; `0` disables |
+| `RATE_LIMIT_WINDOW_MS` | `60000` | Rate limit window (ms) |
+| `TRUST_PROXY` | _(unset)_ | Express `trust proxy` (e.g. `1`); set behind a reverse proxy so limits apply per client IP |
 | `REQUEST_TIMEOUT` | `60000` | `/mcp` request timeout in milliseconds (HTTP 408 after) |
 | `ENABLE_SSE_TRANSPORT` | `true` | Enable the legacy `/sse` transport |
 | `SSE_HEARTBEAT_INTERVAL` | `30000` | SSE heartbeat interval in milliseconds |

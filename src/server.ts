@@ -61,6 +61,8 @@ export class MCPServer {
       corsOrigins: this.config.cors.origins,
       enableLogging: this.config.server.enableLogging,
       requestTimeout: this.config.server.requestTimeout,
+      trustProxy: this.config.server.trustProxy,
+      rateLimit: this.config.rateLimit,
       https: this.config.transport.https
     }, handleRequest, this.sseTransport);
   }

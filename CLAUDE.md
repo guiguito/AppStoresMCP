@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Docker Commands
 - `docker-compose up --build` - Build and run with Docker Compose
-- `npm run test:integration:docker` - Run integration tests in Docker
+- `npm run test:integration:docker` - Build the Docker image and run the live check inside it
 - `./scripts/generate-ssl-certs.sh` - Generate SSL certificates for HTTPS
 
 ## Architecture Overview
@@ -54,6 +54,7 @@ Configuration is managed through environment variables via `src/config/server-co
 - Server port, logging, timeouts
 - Transport enablement (HTTP/SSE)  
 - CORS / Origin allow-list (`CORS_ORIGINS`, empty by default)
+- Per-IP rate limit on `/mcp` and `/sse` (`RATE_LIMIT_MAX_REQUESTS`, `RATE_LIMIT_WINDOW_MS`, `TRUST_PROXY`)
 - HTTPS/SSL support
 - Tool enable/disable (`ENABLED_TOOLS`, `DISABLED_TOOLS`)
 
@@ -96,7 +97,7 @@ Comprehensive error handling through:
 - `express` - HTTP server framework
 - `google-play-scraper-ts` - Google Play Store data scraping
 - `app-store-scraper-ts` - Apple App Store data scraping  
-- `cors`, `helmet` - Security middleware
+- `cors`, `helmet`, `express-rate-limit` - Security middleware
 
 ## Important Implementation Details
 
@@ -104,4 +105,4 @@ Comprehensive error handling through:
 - All tools return raw data models to preserve complete information
 - Configuration validation ensures proper transport setup
 - Graceful shutdown handling for production deployments
-- Security headers (helmet) configured by default; no rate limiting
+- Security headers (helmet) and per-IP rate limiting (express-rate-limit) configured by default

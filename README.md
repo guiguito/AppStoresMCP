@@ -247,6 +247,9 @@ The server can be configured using environment variables:
 
 ### CORS and Security
 - `CORS_ORIGINS` - Allowed browser origins, comma-separated, or `*` for any. Default: none — no CORS headers are sent and any request carrying an `Origin` header that is not listed is rejected with 403 on `/mcp` and `/sse`. Requests without an `Origin` header (CLI/desktop MCP clients) are always accepted.
+- `RATE_LIMIT_MAX_REQUESTS` - Max requests per client IP per window on `/mcp` and `/sse` (default: `100`, `0` disables). Over the limit: HTTP 429 with a JSON-RPC error.
+- `RATE_LIMIT_WINDOW_MS` - Rate limit window in ms (default: `60000`)
+- `TRUST_PROXY` - Express `trust proxy` value (e.g. `1` for one reverse proxy hop). Set it behind a proxy/load balancer, otherwise every client shares the proxy's IP and therefore one rate-limit bucket.
 - `REQUEST_TIMEOUT` - `/mcp` request timeout in milliseconds; slower requests get HTTP 408 (default: 60000)
 - `ENABLE_LOGGING` - Enable request logging (default: true)
 

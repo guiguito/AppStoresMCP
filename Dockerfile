@@ -28,15 +28,14 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY jest.config.js ./
 COPY tsconfig.json ./
 
 # Install all dependencies (including dev dependencies for testing)
 RUN npm ci
 
-# Copy source code and tests
+# Copy source code and scripts (tests/ and jest.config.js are excluded by .dockerignore)
 COPY src/ ./src/
-COPY tests/ ./tests/
+COPY scripts/ ./scripts/
 
 # Build TypeScript
 RUN npm run build

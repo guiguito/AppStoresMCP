@@ -12,6 +12,13 @@ export interface ServerConfig {
   server: {
     requestTimeout: number;
     enableLogging: boolean;
+    /** Express "trust proxy" setting (hop count or value); needed behind a reverse proxy so rate limits apply per client IP */
+    trustProxy?: number | string | undefined;
+  };
+  /** Per-IP request limit on /mcp and /sse; omitted or maxRequests 0 = disabled */
+  rateLimit?: {
+    windowMs: number;
+    maxRequests: number;
   };
   transport: {
     enableSSE: boolean;
@@ -44,7 +51,14 @@ export function loadConfig(): ServerConfig {
     },
     server: {
       requestTimeout: parseInt(process.env.REQUEST_TIMEOUT || '60000', 10),
-      enableLogging: process.env.ENABLE_LOGGING !== 'false'
+      enableLogging: process.env.ENABLE_LOGGING !== 'false',
+      ...(process.env.TRUST_PROXY && {
+        trustProxy: /^\d+$/.test(process.env.TRUST_PROXY) ? parseInt(process.env.TRUST_PROXY, 10) : process.env.TRUST_PROXY
+      })
+    },
+    rateLimit: {
+      windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
+      maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10)
     },
     transport: {
       enableSSE: process.env.ENABLE_SSE_TRANSPORT !== 'false',
@@ -73,6 +87,10 @@ export function loadConfig(): ServerConfig {
 function validateConfig(config: ServerConfig): void {
   if (!(config.port >= 1 && config.port <= 65535)) {
     throw new Error(`Invalid port number: ${config.port}. Must be between 1 and 65535.`);
+  }
+
+  if (config.rateLimit && !(config.rateLimit.maxRequests >= 0 && config.rateLimit.windowMs >= 1000)) {
+    throw new Error('Invalid rate limit: RATE_LIMIT_MAX_REQUESTS must be >= 0 (0 disables) and RATE_LIMIT_WINDOW_MS >= 1000.');
   }
 
   if (!(config.transport.sse.heartbeatInterval >= 1000)) {
@@ -160,6 +178,7 @@ export function getConfigSummary(config: ServerConfig): Record<string, any> {
     port: config.port,
     corsOrigins: config.cors.origins.length > 0 ? config.cors.origins.join(', ') : 'none',
     requestTimeout: `${config.server.requestTimeout}ms`,
+    rateLimit: config.rateLimit && config.rateLimit.maxRequests > 0 ? `${config.rateLimit.maxRequests} req / ${config.rateLimit.windowMs}ms per IP` : "disabled",
     loggingEnabled: config.server.enableLogging,
     sseTransportEnabled: config.transport.enableSSE,
     sseHeartbeatInterval: `${config.transport.sse.heartbeatInterval}ms`,

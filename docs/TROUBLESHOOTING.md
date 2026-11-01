@@ -37,6 +37,7 @@ curl -N http://localhost:3000/sse
 | `POST /sse/<id>/message` returns 404 | The stream for that connection id is closed (client disconnected or server restarted). Reconnect to `/sse` and use the new endpoint. |
 | `GET /sse` returns 503 | `SSE_MAX_CONNECTIONS` reached. |
 | Request returns 403 `Origin not allowed` | The request carries a browser `Origin` header that is not in `CORS_ORIGINS`. |
+| Request returns 429 `Rate limit exceeded` | More than `RATE_LIMIT_MAX_REQUESTS` requests from one IP in `RATE_LIMIT_WINDOW_MS`. Behind a proxy, set `TRUST_PROXY` so clients don't share one bucket. |
 | Responses never arrive behind a proxy | Disable proxy buffering for `/sse` (see below). |
 | Client expects `connection` / `mcp-response` events | Those custom events were removed; use the standard `endpoint` / `message` events (see `examples/sse-client-example.js`). |
 

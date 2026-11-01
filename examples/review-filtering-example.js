@@ -41,7 +41,12 @@ async function sendMCPRequest(toolName, arguments) {
     throw new Error(`MCP Error: ${result.error.message}`);
   }
 
-  return result.result;
+  // Tool output is JSON text in content[0]; failures come back with isError: true
+  const text = result.result.content[0].text;
+  if (result.result.isError) {
+    throw new Error(`Tool error: ${text}`);
+  }
+  return JSON.parse(text);
 }
 
 /**
@@ -103,7 +108,6 @@ async function getFilteredAppStoreReviews() {
   
   const reviews = await sendMCPRequest('app-store-app-reviews', {
     appId: '310633997', // WhatsApp iOS
-    num: 3,
     sort: 'newest'
     // fullDetail: false is the default
   });
@@ -130,7 +134,6 @@ async function getFullAppStoreReviews() {
   
   const reviews = await sendMCPRequest('app-store-app-reviews', {
     appId: '310633997', // WhatsApp iOS
-    num: 3,
     sort: 'newest',
     fullDetail: true  // Request full details
   });

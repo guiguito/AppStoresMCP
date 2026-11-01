@@ -8,7 +8,7 @@ import { MCPHandler } from '../../src/protocol/mcp-handler';
 import { ToolRegistry } from '../../src/registry/tool-registry';
 import { MCPTool, MCPErrorCode } from '../../src/types/mcp';
 
-function makeApp(options: { corsOrigins?: string[]; requestTimeout?: number; execute?: MCPTool['execute'] } = {}) {
+function makeApp(options: { corsOrigins?: string[]; requestTimeout?: number; rateLimit?: { windowMs: number; maxRequests: number }; execute?: MCPTool['execute'] } = {}) {
   const registry = new ToolRegistry();
   registry.registerTool({
     name: 'echo',
@@ -18,7 +18,7 @@ function makeApp(options: { corsOrigins?: string[]; requestTimeout?: number; exe
   });
   const mcpHandler = new MCPHandler(registry);
   const transport = new HTTPTransportHandler(
-    { port: 0, enableLogging: false, ...(options.corsOrigins && { corsOrigins: options.corsOrigins }), ...(options.requestTimeout && { requestTimeout: options.requestTimeout }) },
+    { port: 0, enableLogging: false, ...(options.corsOrigins && { corsOrigins: options.corsOrigins }), ...(options.requestTimeout && { requestTimeout: options.requestTimeout }), rateLimit: options.rateLimit },
     (req) => mcpHandler.handleRequest(req)
   );
   return transport.getApp();
@@ -117,6 +117,17 @@ describe('HTTPTransportHandler', () => {
     expect(res.status).toBe(413);
     expect(res.headers['content-type']).toMatch(/json/);
     expect(res.text).not.toMatch(/<html|at \w+ \(/i);
+  });
+
+  it('rate-limits /mcp per client with a JSON-RPC 429, leaving /health alone', async () => {
+    const app = makeApp({ rateLimit: { windowMs: 60000, maxRequests: 2 } });
+    const list = () => request(app).post('/mcp').send({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
+    expect((await list()).status).toBe(200);
+    expect((await list()).status).toBe(200);
+    const limited = await list();
+    expect(limited.status).toBe(429);
+    expect(limited.body.error.message).toMatch(/Rate limit/);
+    expect((await request(app).get('/health')).status).toBe(200);
   });
 
   it('returns JSON 404 for unknown routes', async () => {

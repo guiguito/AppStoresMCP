@@ -5,6 +5,7 @@
 import express, { Request, Response, NextFunction, RequestHandler, ErrorRequestHandler } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
 import * as http from 'http';
 import * as https from 'https';
 import * as fs from 'fs';
@@ -19,6 +20,8 @@ export interface HTTPTransportConfig {
   corsOrigins?: string[];
   enableLogging?: boolean;
   requestTimeout?: number;
+  trustProxy?: number | string | undefined;
+  rateLimit?: { windowMs: number; maxRequests: number } | undefined;
   https?: {
     enabled: boolean;
     keyPath?: string | undefined;
@@ -50,6 +53,18 @@ export class HTTPTransportHandler {
       this.app.use(this.requestLoggingMiddleware);
     }
     this.app.use(['/mcp', '/sse'], this.originGuard);
+    if (config.trustProxy !== undefined) {
+      this.app.set('trust proxy', config.trustProxy);
+    }
+    if (config.rateLimit && config.rateLimit.maxRequests > 0) {
+      this.app.use(['/mcp', '/sse'], rateLimit({
+        windowMs: config.rateLimit.windowMs,
+        limit: config.rateLimit.maxRequests,
+        standardHeaders: 'draft-8',
+        legacyHeaders: false,
+        message: errorResponse(null, MCPErrorCode.INTERNAL_ERROR, 'Rate limit exceeded, retry later')
+      }));
+    }
 
     this.app.get('/health', (_req: Request, res: Response) => {
       res.json({
