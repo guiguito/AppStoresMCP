@@ -1,96 +1,42 @@
 /**
  * Apple App Store Developer MCP Tool
- * Provides apps by developer functionality
  */
 
-import { MCPTool } from '../types/mcp';
+import * as store from 'app-store-scraper-ts';
 import { JSONSchema7 } from 'json-schema';
+import { MCPTool } from '../types/mcp';
+import { country, lang } from './common';
 
-/**
- * Input parameters for Apple App Store developer tool
- */
 interface AppStoreDeveloperParams {
   devId: string;
   country?: string;
   lang?: string;
 }
 
-/**
- * Apple App Store Developer MCP Tool implementation
- */
 export class AppStoreDeveloperTool implements MCPTool {
   public readonly name = 'app-store-developer';
-  public readonly description = 'Get apps by developer from Apple App Store';
+  public readonly description = 'Get apps by a developer from Apple App Store, using the numeric developer (artist) ID';
 
   public readonly inputSchema: JSONSchema7 = {
     type: 'object',
     properties: {
       devId: {
         type: 'string',
-        description: 'The developer ID or name to search for'
+        description: 'Numeric App Store developer (artist) ID, e.g. 284882218 (the `developerId` field of app results). Names are not supported.',
+        pattern: '^\\d+$'
       },
-      country: {
-        type: 'string',
-        description: 'Country code for region-specific content (default: us)',
-        pattern: '^[a-z]{2}$',
-        default: 'us'
-      },
-      lang: {
-        type: 'string',
-        description: 'Language code for localized content (default: en)',
-        pattern: '^[a-z]{2}$',
-        default: 'en'
-      }
+      country,
+      lang: lang('en')
     },
     required: ['devId'],
     additionalProperties: false
   };
 
-  constructor() {
-    // No dependencies needed - calling app-store-scraper-ts directly
-  }
-
-  /**
-   * Execute the Apple App Store developer tool
-   */
   async execute(params: AppStoreDeveloperParams): Promise<any> {
-    // Validate input parameters
-    this.validateParams(params);
-
-    // Fetch raw developer data directly from app-store-scraper-ts
-    const store = await import('app-store-scraper-ts');
-    
-    const developerParams: any = {
+    return store.developer({
       devId: params.devId,
       country: params.country || 'us',
       lang: params.lang || 'en'
-    };
-
-    const rawDeveloperData = await store.developer(developerParams);
-
-    // Return complete raw response from app-store-scraper
-    return rawDeveloperData;
-  }
-
-  /**
-   * Validate input parameters
-   * @private
-   */
-  private validateParams(params: any): void {
-    if (!params || typeof params !== 'object') {
-      throw new Error('Parameters must be an object');
-    }
-
-    if (!params.devId || typeof params.devId !== 'string' || params.devId.trim().length === 0) {
-      throw new Error('devId is required and must be a non-empty string');
-    }
-
-    if (params.country && (typeof params.country !== 'string' || !/^[a-z]{2}$/.test(params.country))) {
-      throw new Error('country must be a valid 2-letter country code');
-    }
-
-    if (params.lang && (typeof params.lang !== 'string' || !/^[a-z]{2}$/.test(params.lang))) {
-      throw new Error('lang must be a valid 2-letter language code');
-    }
+    });
   }
 }

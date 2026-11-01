@@ -3,17 +3,17 @@
  */
 
 /**
- * Essential fields to keep in non-detailed responses
+ * Essential App Store app fields kept in non-detailed responses (filterAppData is only used by app-store-search)
  */
 const ESSENTIAL_FIELDS = [
   'id',
-  'appId', 
+  'appId',
   'title',
   'url',
   'price',
-  'rating',
-  'ratingsCount',
-  'category',
+  'score',
+  'reviews',
+  'primaryGenre',
   'developer',
   'developerId',
   'icon',
@@ -144,13 +144,3 @@ function filterSingleReview(review: any, essentialFields: string[]): any {
   return filtered;
 }
 
-/**
- * Get a summary of what fields were filtered out
- * @param originalCount - Number of fields in original data
- * @param filteredCount - Number of fields in filtered data
- * @returns Summary message
- */
-export function getFilterSummary(originalCount: number, filteredCount: number): string {
-  const removedCount = originalCount - filteredCount;
-  return `Filtered response: kept ${filteredCount} essential fields, removed ${removedCount} verbose fields to reduce token usage`;
-}

@@ -16,21 +16,13 @@ services:
     environment:
       - NODE_ENV=test
       - PORT=3000
-      - LOG_LEVEL=error
-      # Enhanced rate limiting for comprehensive tests
-      - RATE_LIMIT_WINDOW_MS=60000
-      - RATE_LIMIT_MAX_REQUESTS=50
       # Longer timeouts for real API calls
-      - SCRAPING_TIMEOUT=20000
-      - SCRAPING_RETRIES=1
       - REQUEST_TIMEOUT=35000
       - CORS_ORIGINS=*
       - ENABLE_LOGGING=false
       # SSE transport configuration
-      - ENABLE_HTTP_TRANSPORT=true
       - ENABLE_SSE_TRANSPORT=true
       - SSE_HEARTBEAT_INTERVAL=5000
-      - SSE_CONNECTION_TIMEOUT=30000
       - SSE_MAX_CONNECTIONS=10
     volumes:
       - ../src:/app/src:ro

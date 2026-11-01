@@ -2,7 +2,7 @@
  * Tests for validation utilities
  */
 
-import { SchemaValidator, validateToolParams, createValidationError } from '../../src/utils/validation';
+import { SchemaValidator, validateToolParams } from '../../src/utils/validation';
 import { MCPErrorCode } from '../../src/types/mcp';
 import { JSONSchema7 } from 'json-schema';
 
@@ -201,20 +201,25 @@ describe('validateToolParams', () => {
   });
 });
 
-describe('createValidationError', () => {
-  it('should create proper validation error', () => {
-    const error = createValidationError('Test error', { field: 'value' });
+describe('additionalProperties: false', () => {
+  const schema: JSONSchema7 = {
+    type: 'object',
+    properties: { appId: { type: 'string' } },
+    additionalProperties: false
+  };
 
-    expect(error.code).toBe(MCPErrorCode.INVALID_PARAMS);
-    expect(error.message).toBe('Test error');
-    expect(error.data).toEqual({ field: 'value' });
+  it('reports each unknown key', () => {
+    const result = SchemaValidator.validate({ appId: 'x', foo: 1, bar: 2 }, schema);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toEqual(["root: Unknown property 'foo'", "root: Unknown property 'bar'"]);
   });
 
-  it('should work without details', () => {
-    const error = createValidationError('Simple error');
+  it('accepts declared keys only', () => {
+    expect(SchemaValidator.validate({ appId: 'x' }, schema).valid).toBe(true);
+  });
 
-    expect(error.code).toBe(MCPErrorCode.INVALID_PARAMS);
-    expect(error.message).toBe('Simple error');
-    expect(error.data).toBeUndefined();
+  it('allows unknown keys when additionalProperties is not false', () => {
+    const open: JSONSchema7 = { ...schema, additionalProperties: undefined };
+    expect(SchemaValidator.validate({ appId: 'x', foo: 1 }, open).valid).toBe(true);
   });
 });

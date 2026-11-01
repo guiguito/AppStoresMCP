@@ -10,11 +10,6 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-900000}
-      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-100}
-      - SCRAPING_TIMEOUT=${SCRAPING_TIMEOUT:-30000}
-      - SCRAPING_RETRIES=${SCRAPING_RETRIES:-3}
       # Tool Configuration - Uncomment and modify as needed
       # - DISABLED_TOOLS=${DISABLED_TOOLS:-}  # Comma-separated list of tools to disable
       # - ENABLED_TOOLS=${ENABLED_TOOLS:-}   # Comma-separated list of tools to enable (if set, only these tools will be enabled)
@@ -44,7 +39,6 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
-      - LOG_LEVEL=debug
       # Tool Configuration - Uncomment and modify as needed
       # - DISABLED_TOOLS=${DISABLED_TOOLS:-}  # Comma-separated list of tools to disable
       # - ENABLED_TOOLS=${ENABLED_TOOLS:-}   # Comma-separated list of tools to enable (if set, only these tools will be enabled)

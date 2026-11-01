@@ -1,17 +1,13 @@
 /**
  * Google Play Store App Reviews MCP Tool
- * Provides app reviews from Google Play Store with pagination support
  */
-
-import { MCPTool } from '../types/mcp';
-import { JSONSchema7 } from 'json-schema';
-import { filterReviewData } from '../utils/response-filter';
 
 import gplay from 'google-play-scraper-ts';
+import { JSONSchema7 } from 'json-schema';
+import { MCPTool } from '../types/mcp';
+import { filterReviewData } from '../utils/response-filter';
+import { country, googlePlayAppId, lang } from './common';
 
-/**
- * Input parameters for Google Play app reviews tool
- */
 interface GooglePlayAppReviewsParams {
   appId: string;
   num?: number;
@@ -22,9 +18,12 @@ interface GooglePlayAppReviewsParams {
   fullDetail?: boolean;
 }
 
-/**
- * Google Play App Reviews MCP Tool implementation
- */
+const SORT = {
+  newest: gplay.sort.NEWEST,
+  rating: gplay.sort.RATING,
+  helpfulness: gplay.sort.HELPFULNESS
+};
+
 export class GooglePlayAppReviewsTool implements MCPTool {
   public readonly name = 'google-play-app-reviews';
   public readonly description = 'Get reviews for a Google Play Store app with token-based pagination. Use nextPaginationToken from response for subsequent pages.';
@@ -32,11 +31,7 @@ export class GooglePlayAppReviewsTool implements MCPTool {
   public readonly inputSchema: JSONSchema7 = {
     type: 'object',
     properties: {
-      appId: {
-        type: 'string',
-        description: 'The Google Play Store app ID (package name, e.g., com.example.app)',
-        pattern: '^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$'
-      },
+      appId: googlePlayAppId,
       num: {
         type: 'integer',
         description: 'Number of reviews to fetch (default: 100, max: 150)',
@@ -46,7 +41,8 @@ export class GooglePlayAppReviewsTool implements MCPTool {
       },
       nextPaginationToken: {
         type: 'string',
-        description: 'Pagination token from previous response\'s "nextPaginationToken" field. Omit for first page. When null/missing in response, no more pages available.'
+        description: 'Pagination token from previous response\'s "nextPaginationToken" field. Omit for first page. When null/missing in response, no more pages available.',
+        minLength: 1
       },
       sort: {
         type: 'string',
@@ -54,18 +50,8 @@ export class GooglePlayAppReviewsTool implements MCPTool {
         enum: ['newest', 'rating', 'helpfulness'],
         default: 'newest'
       },
-      lang: {
-        type: 'string',
-        description: 'Language code for localized content (default: en)',
-        pattern: '^[a-z]{2}$',
-        default: 'en'
-      },
-      country: {
-        type: 'string',
-        description: 'Country code for region-specific content (default: us)',
-        pattern: '^[a-z]{2}$',
-        default: 'us'
-      },
+      lang: lang('en'),
+      country,
       fullDetail: {
         type: 'boolean',
         description: 'Whether to return full review details (default: false). When false, only essential fields are returned: id, userName, date, score, text, version',
@@ -76,151 +62,16 @@ export class GooglePlayAppReviewsTool implements MCPTool {
     additionalProperties: false
   };
 
-  constructor() {
-    // No longer using scraper service - calling google-play-scraper directly
-  }
-
-  /**
-   * Execute the Google Play app reviews tool
-   */
   async execute(params: GooglePlayAppReviewsParams): Promise<any> {
-    try {
-      // Validate input parameters
-      this.validateParams(params);
-
-      // Fetch raw app reviews directly from google-play-scraper
-      const reviewsOptions: any = {
-        appId: params.appId,
-        num: Math.min(params.num || 100, 150), // Limit to prevent excessive requests
-        sort: await this.mapSortOption(params.sort),
-        lang: params.lang || 'en',
-        country: params.country || 'us',
-        paginate: true // Enable pagination
-      };
-
-      // Only add nextPaginationToken if it's provided and not empty
-      if (params.nextPaginationToken && params.nextPaginationToken.trim()) {
-        reviewsOptions.nextPaginationToken = params.nextPaginationToken.trim();
-      }
-
-      const rawReviews = await gplay.reviews(reviewsOptions);
-
-      // Filter response to reduce token consumption when not in full detail mode
-      return filterReviewData(rawReviews, params.fullDetail || false, 'google-play');
-    } catch (error) {
-      const appId = params && typeof params === 'object' ? params.appId : 'unknown';
-      return this.handleError(error, appId);
-    }
-  }
-
-  /**
-   * Validate input parameters
-   * @private
-   */
-  private validateParams(params: any): void {
-    if (!params || typeof params !== 'object') {
-      throw new Error('Parameters must be an object');
-    }
-
-    if (!params.appId || typeof params.appId !== 'string' || params.appId.trim().length === 0) {
-      throw new Error('appId is required and must be a string');
-    }
-
-    if (params.num !== undefined) {
-      if (typeof params.num !== 'number' || !Number.isInteger(params.num) || params.num < 1 || params.num > 150) {
-        throw new Error('num must be an integer between 1 and 150');
-      }
-    }
-
-    if (params.nextPaginationToken !== undefined) {
-      if (typeof params.nextPaginationToken !== 'string' || params.nextPaginationToken.trim().length === 0) {
-        throw new Error('nextPaginationToken must be a non-empty string');
-      }
-    }
-
-    if (params.sort && !['newest', 'rating', 'helpfulness'].includes(params.sort)) {
-      throw new Error('sort must be one of: newest, rating, helpfulness');
-    }
-
-    if (params.lang && (typeof params.lang !== 'string' || !/^[a-z]{2}$/.test(params.lang))) {
-      throw new Error('lang must be a valid 2-letter language code');
-    }
-
-    if (params.country && (typeof params.country !== 'string' || !/^[a-z]{2}$/.test(params.country))) {
-      throw new Error('country must be a valid 2-letter country code');
-    }
-
-    if (params.fullDetail !== undefined && typeof params.fullDetail !== 'boolean') {
-      throw new Error('fullDetail must be a boolean');
-    }
-  }
-
-  /**
-   * Map sort option to google-play-scraper format
-   * @private
-   */
-  private async mapSortOption(sort?: string): Promise<number> {
-    switch (sort) {
-      case 'newest':
-        return gplay.sort.NEWEST;
-      case 'rating':
-        return gplay.sort.RATING;
-      case 'helpfulness':
-        return gplay.sort.HELPFULNESS;
-      default:
-        return gplay.sort.NEWEST;
-    }
-  }
-
-  /**
-   * Handle and format errors
-   * @private
-   */
-  private handleError(error: any, appId: string): any {
-
-    if (error.message && error.message.includes('not found')) {
-      return {
-        success: false,
-        error: {
-          type: 'not_found',
-          code: 'APP_NOT_FOUND',
-          message: `App with ID '${appId}' not found in Google Play Store`,
-          appId
-        }
-      };
-    }
-
-    // Handle validation errors specifically
-    if (error.message && (
-      error.message.includes('appId is required') ||
-      error.message.includes('Parameters must be an object') ||
-      error.message.includes('num must be') ||
-      error.message.includes('nextPaginationToken must be') ||
-      error.message.includes('sort must be') ||
-      error.message.includes('lang must be') ||
-      error.message.includes('country must be') ||
-      error.message.includes('fullDetail must be')
-    )) {
-      return {
-        success: false,
-        error: {
-          type: 'validation_error',
-          code: 'INVALID_PARAMS',
-          message: error.message,
-          appId
-        }
-      };
-    }
-
-    return {
-      success: false,
-      error: {
-        type: 'internal_error',
-        code: 'INTERNAL_ERROR',
-        message: 'An unexpected error occurred while fetching app reviews',
-        appId,
-        details: error.message || 'Unknown error'
-      }
-    };
+    const reviews = await gplay.reviews({
+      appId: params.appId,
+      num: params.num || 100,
+      sort: SORT[params.sort || 'newest'],
+      lang: params.lang || 'en',
+      country: params.country || 'us',
+      paginate: true,
+      ...(params.nextPaginationToken ? { nextPaginationToken: params.nextPaginationToken } : {})
+    });
+    return filterReviewData(reviews, params.fullDetail || false, 'google-play');
   }
 }

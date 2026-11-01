@@ -44,12 +44,6 @@ export class ToolRegistry {
     return this.tools.get(name);
   }
 
-  /**
-   * Check if a tool exists
-   */
-  hasTool(name: string): boolean {
-    return this.tools.has(name);
-  }
 
   /**
    * Get all registered tools for discovery
@@ -71,19 +65,7 @@ export class ToolRegistry {
     return Array.from(this.tools.keys());
   }
 
-  /**
-   * Remove a tool by name
-   */
-  unregisterTool(name: string): boolean {
-    return this.tools.delete(name);
-  }
 
-  /**
-   * Clear all registered tools
-   */
-  clear(): void {
-    this.tools.clear();
-  }
 
   /**
    * Get the number of registered tools

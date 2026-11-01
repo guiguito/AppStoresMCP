@@ -1,56 +1,43 @@
 /**
  * Apple App Store App Reviews MCP Tool
- * Provides app reviews from Apple App Store with pagination support
  */
 
-import { MCPTool } from '../types/mcp';
+import * as store from 'app-store-scraper-ts';
 import { JSONSchema7 } from 'json-schema';
+import { MCPTool } from '../types/mcp';
 import { filterReviewData } from '../utils/response-filter';
+import { appStoreAppId, appStoreIdOption, country } from './common';
 
-/**
- * Input parameters for Apple App Store app reviews tool
- */
 interface AppStoreAppReviewsParams {
   appId: string;
   page?: number;
-  sort?: 'newest' | 'rating' | 'helpfulness';
+  sort?: 'newest' | 'helpfulness';
   country?: string;
   fullDetail?: boolean;
 }
 
-/**
- * Apple App Store App Reviews MCP Tool implementation
- */
 export class AppStoreAppReviewsTool implements MCPTool {
   public readonly name = 'app-store-app-reviews';
-  public readonly description = 'Get reviews for an Apple App Store app with page-based pagination. Increment page parameter for next page, empty array indicates end.';
+  public readonly description = 'Get reviews for an Apple App Store app. Apple serves at most 10 pages (about 50 reviews each); an empty array means no more reviews.';
 
   public readonly inputSchema: JSONSchema7 = {
     type: 'object',
     properties: {
-      appId: {
-        type: 'string',
-        description: 'The Apple App Store app ID (numeric ID, e.g., 123456789)',
-        pattern: '^\\d+$'
-      },
+      appId: appStoreAppId,
       page: {
         type: 'integer',
-        description: 'Page number for pagination (default: 1). Increment to get next page. Empty array response indicates no more pages.',
+        description: 'Page number, 1 to 10 (default: 1). Apple does not serve pages beyond 10.',
         minimum: 1,
+        maximum: 10,
         default: 1
       },
       sort: {
         type: 'string',
-        description: 'Sort order for reviews',
-        enum: ['newest', 'rating', 'helpfulness'],
+        description: 'Sort order: newest (most recent) or helpfulness (most helpful)',
+        enum: ['newest', 'helpfulness'],
         default: 'newest'
       },
-      country: {
-        type: 'string',
-        description: 'Country code for region-specific content (default: us)',
-        pattern: '^[a-z]{2}$',
-        default: 'us'
-      },
+      country,
       fullDetail: {
         type: 'boolean',
         description: 'Whether to return full review details (default: false). When false, only essential fields are returned: id, version, userName, score, title, text, updated',
@@ -61,84 +48,13 @@ export class AppStoreAppReviewsTool implements MCPTool {
     additionalProperties: false
   };
 
-  constructor() {
-    // No longer using scraper service - calling app-store-scraper-ts directly
-  }
-
-  /**
-   * Execute the Apple App Store app reviews tool
-   */
   async execute(params: AppStoreAppReviewsParams): Promise<any> {
-    // Validate input parameters
-    this.validateParams(params);
-
-    // Fetch raw app reviews directly from app-store-scraper-ts
-    const store = await import('app-store-scraper-ts');
-    
-    const reviewsOptions: any = {
-      id: params.appId,
+    const reviews = await store.reviews({
+      ...appStoreIdOption(params.appId),
       page: params.page || 1,
-      sort: this.mapSortOption(params.sort),
+      sort: params.sort === 'helpfulness' ? store.constants.sort.HELPFUL : store.constants.sort.RECENT,
       country: params.country || 'us'
-    };
-
-    const rawReviews = await store.reviews(reviewsOptions);
-
-    // Filter response to reduce token consumption when not in full detail mode
-    return filterReviewData(rawReviews, params.fullDetail || false, 'app-store');
-  }
-
-  /**
-   * Validate input parameters
-   * @private
-   */
-  private validateParams(params: any): void {
-    if (!params || typeof params !== 'object') {
-      throw new Error('Parameters must be an object');
-    }
-
-    if (!params.appId || typeof params.appId !== 'string' || params.appId.trim().length === 0) {
-      throw new Error('appId is required and must be a string');
-    }
-
-    if (!/^\d+$/.test(params.appId.trim())) {
-      throw new Error('appId must be a numeric string for Apple App Store');
-    }
-
-    if (params.page !== undefined) {
-      if (typeof params.page !== 'number' || !Number.isInteger(params.page) || params.page < 1) {
-        throw new Error('page must be a positive integer');
-      }
-    }
-
-    if (params.sort && !['newest', 'rating', 'helpfulness'].includes(params.sort)) {
-      throw new Error('sort must be one of: newest, rating, helpfulness');
-    }
-
-    if (params.country && (typeof params.country !== 'string' || !/^[a-z]{2}$/.test(params.country))) {
-      throw new Error('country must be a valid 2-letter country code');
-    }
-
-    if (params.fullDetail !== undefined && typeof params.fullDetail !== 'boolean') {
-      throw new Error('fullDetail must be a boolean');
-    }
-  }
-
-  /**
-   * Map sort option to app-store-scraper format
-   * @private
-   */
-  private mapSortOption(sort?: string): string {
-    switch (sort) {
-      case 'newest':
-      case 'mostRecent':
-        return 'mostRecent';
-      case 'rating':
-      case 'helpful':
-      case 'mostHelpful':
-        return 'mostHelpful';
-      default:
-        return 'mostRecent';
-    }
+    });
+    return filterReviewData(reviews, params.fullDetail || false, 'app-store');
   }
 }

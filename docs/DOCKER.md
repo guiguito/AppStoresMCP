@@ -42,13 +42,11 @@ The following environment variables can be used to configure the server:
 |----------|---------|-------------|
 | `NODE_ENV` | `production` | Node.js environment |
 | `PORT` | `3000` | Server port |
-| `LOG_LEVEL` | `info` | Logging level (debug, info, warn, error) |
-| `RATE_LIMIT_WINDOW_MS` | `900000` | Rate limiting window in milliseconds (15 minutes) |
-| `RATE_LIMIT_MAX_REQUESTS` | `100` | Maximum requests per window |
-| `SCRAPING_TIMEOUT` | `30000` | Scraping operation timeout in milliseconds |
-| `SCRAPING_RETRIES` | `3` | Number of retry attempts for failed scraping operations |
-| `CORS_ORIGINS` | `*` | Comma-separated list of allowed CORS origins |
-| `REQUEST_TIMEOUT` | `60000` | HTTP request timeout in milliseconds |
+| `CORS_ORIGINS` | _(none)_ | Comma-separated allowed browser origins, or `*`. Unset: no CORS headers and requests with a non-allowed `Origin` header get 403 (requests without `Origin` always pass) |
+| `REQUEST_TIMEOUT` | `60000` | `/mcp` request timeout in milliseconds (HTTP 408 after) |
+| `ENABLE_SSE_TRANSPORT` | `true` | Enable the legacy `/sse` transport |
+| `SSE_HEARTBEAT_INTERVAL` | `30000` | SSE heartbeat interval in milliseconds |
+| `SSE_MAX_CONNECTIONS` | `100` | Maximum concurrent SSE connections |
 | `ENABLE_LOGGING` | `true` | Enable/disable request logging |
 
 ### Docker Compose Configuration
@@ -58,11 +56,8 @@ Create a `.env` file in your project root to customize environment variables:
 ```bash
 # .env file
 PORT=3000
-LOG_LEVEL=info
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-SCRAPING_TIMEOUT=30000
-SCRAPING_RETRIES=3
+REQUEST_TIMEOUT=60000
+# CORS_ORIGINS=https://yourdomain.com
 ```
 
 ## Docker Images
@@ -128,7 +123,6 @@ docker service create \
   --name app-store-mcp-server \
   --publish 3000:3000 \
   --env NODE_ENV=production \
-  --env LOG_LEVEL=info \
   --replicas 2 \
   app-store-mcp-server
 ```
@@ -158,8 +152,6 @@ spec:
         env:
         - name: NODE_ENV
           value: "production"
-        - name: LOG_LEVEL
-          value: "info"
         livenessProbe:
           httpGet:
             path: /health
@@ -267,7 +259,6 @@ Run container in debug mode:
 ```bash
 docker run -it \
   -e NODE_ENV=development \
-  -e LOG_LEVEL=debug \
   -p 3000:3000 \
   app-store-mcp-server
 ```

@@ -1,437 +1,132 @@
 /**
- * Unit tests for HTTP Transport Layer
- * Tests MCP Streamable HTTP transport functionality
+ * Tests for the Streamable HTTP transport (POST /mcp) and shared middleware
  */
 
 import request from 'supertest';
-import { HTTPTransportHandler, HTTPTransportConfig } from '../../src/transport/http-transport';
-import { MCPRequest, MCPResponse, MCPErrorCode } from '../../src/types/mcp';
+import { HTTPTransportHandler } from '../../src/transport/http-transport';
+import { MCPHandler } from '../../src/protocol/mcp-handler';
+import { ToolRegistry } from '../../src/registry/tool-registry';
+import { MCPTool, MCPErrorCode } from '../../src/types/mcp';
+
+function makeApp(options: { corsOrigins?: string[]; requestTimeout?: number; execute?: MCPTool['execute'] } = {}) {
+  const registry = new ToolRegistry();
+  registry.registerTool({
+    name: 'echo',
+    description: 'Echo tool',
+    inputSchema: { type: 'object', properties: { text: { type: 'string' } } },
+    execute: options.execute ?? (async (args: any) => ({ echoed: args.text }))
+  });
+  const mcpHandler = new MCPHandler(registry);
+  const transport = new HTTPTransportHandler(
+    { port: 0, enableLogging: false, ...(options.corsOrigins && { corsOrigins: options.corsOrigins }), ...(options.requestTimeout && { requestTimeout: options.requestTimeout }) },
+    (req) => mcpHandler.handleRequest(req)
+  );
+  return transport.getApp();
+}
 
 describe('HTTPTransportHandler', () => {
-  let transportHandler: HTTPTransportHandler;
-  let mockRequestHandler: jest.Mock;
+  beforeEach(() => jest.spyOn(console, 'error').mockImplementation(() => {}));
+  afterEach(() => jest.restoreAllMocks());
 
-  const defaultConfig: HTTPTransportConfig = {
-    port: 0, // Use port 0 to let OS assign a random available port
-    enableLogging: false, // Disable logging for tests
-    requestTimeout: 5000
-  };
+  it('serves tools/list and tools/call', async () => {
+    const app = makeApp();
+    const list = await request(app).post('/mcp').send({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
+    expect(list.status).toBe(200);
+    expect(list.body.result.tools.map((t: any) => t.name)).toEqual(['echo']);
 
-  beforeEach(() => {
-    mockRequestHandler = jest.fn();
-    transportHandler = new HTTPTransportHandler(defaultConfig);
-    transportHandler.setRequestHandler(mockRequestHandler);
-    // Finalize routes to set up 404 and error handlers (since no SSE in unit tests)
-    transportHandler.finalizeRoutes();
+    const call = await request(app).post('/mcp').send({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'echo', arguments: { text: 'hi' } } });
+    expect(call.status).toBe(200);
+    expect(JSON.parse(call.body.result.content[0].text)).toEqual({ echoed: 'hi' });
   });
 
-  afterEach(async () => {
-    await transportHandler.stop();
+  it('answers notifications with 202 and an empty body', async () => {
+    const res = await request(makeApp()).post('/mcp').send({ jsonrpc: '2.0', method: 'notifications/initialized' });
+    expect(res.status).toBe(202);
+    expect(res.text).toBe('');
   });
 
-  describe('Server Setup', () => {
-    it('should create Express app with proper middleware', () => {
-      const app = transportHandler.getApp();
-      expect(app).toBeDefined();
-    });
-
-    it('should start and stop server successfully', async () => {
-      await expect(transportHandler.start()).resolves.toBeUndefined();
-      await expect(transportHandler.stop()).resolves.toBeUndefined();
-    });
+  it('returns 200 with isError when the tool throws', async () => {
+    const app = makeApp({ execute: async () => { throw new Error('upstream failed'); } });
+    const res = await request(app).post('/mcp').send({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'echo', arguments: {} } });
+    expect(res.status).toBe(200);
+    expect(res.body.result).toEqual({ content: [{ type: 'text', text: 'upstream failed' }], isError: true });
   });
 
-  describe('Health Check Endpoint', () => {
-    it('should return health status', async () => {
-      const app = transportHandler.getApp();
-      const response = await request(app)
-        .get('/health')
-        .expect(200);
-
-      expect(response.body).toEqual({
-        status: 'healthy',
-        timestamp: expect.any(String),
-        version: expect.any(String)
-      });
-    });
+  it('returns 200 with -32602 for an unknown tool', async () => {
+    const res = await request(makeApp()).post('/mcp').send({ jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'nope' } });
+    expect(res.status).toBe(200);
+    expect(res.body.error.code).toBe(MCPErrorCode.INVALID_PARAMS);
   });
 
-  describe('CORS and Security Headers', () => {
-    it('should include CORS headers', async () => {
-      const app = transportHandler.getApp();
-      const response = await request(app)
-        .options('/mcp')
-        .expect(204);
+  it('returns 400 for invalid JSON and invalid envelopes', async () => {
+    const app = makeApp();
+    const badJson = await request(app).post('/mcp').set('Content-Type', 'application/json').send('{not json');
+    expect(badJson.status).toBe(400);
+    expect(badJson.body).toMatchObject({ jsonrpc: '2.0', id: null, error: { code: MCPErrorCode.PARSE_ERROR } });
 
-      expect(response.headers['access-control-allow-origin']).toBe('*');
-      expect(response.headers['access-control-allow-methods']).toContain('POST');
-    });
-
-    it('should include security headers', async () => {
-      const app = transportHandler.getApp();
-      const response = await request(app)
-        .get('/health');
-
-      expect(response.headers['x-content-type-options']).toBe('nosniff');
-      expect(response.headers['x-frame-options']).toBe('SAMEORIGIN');
-    });
+    const badEnvelope = await request(app).post('/mcp').send({ hello: 'world' });
+    expect(badEnvelope.status).toBe(400);
+    expect(badEnvelope.body.error.code).toBe(MCPErrorCode.INVALID_REQUEST);
   });
 
-  describe('Correlation ID Handling', () => {
-    it('should generate correlation ID when not provided', async () => {
-      const app = transportHandler.getApp();
-      const response = await request(app)
-        .get('/health');
+  describe('Origin / CORS', () => {
+    const ping = { jsonrpc: '2.0', id: 1, method: 'ping' };
 
-      expect(response.headers['x-correlation-id']).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-      );
+    it('rejects browser origins by default but allows requests without Origin', async () => {
+      const app = makeApp();
+      expect((await request(app).post('/mcp').set('Origin', 'https://evil.example').send(ping)).status).toBe(403);
+      const ok = await request(app).post('/mcp').send(ping);
+      expect(ok.status).toBe(200);
+      expect(ok.headers['access-control-allow-origin']).toBeUndefined();
     });
 
-    it('should use provided correlation ID', async () => {
-      const app = transportHandler.getApp();
-      const correlationId = 'test-correlation-id';
-      
-      const response = await request(app)
-        .get('/health')
-        .set('X-Correlation-ID', correlationId);
+    it('allows configured origins and rejects others', async () => {
+      const app = makeApp({ corsOrigins: ['https://app.example'] });
+      const ok = await request(app).post('/mcp').set('Origin', 'https://app.example').send(ping);
+      expect(ok.status).toBe(200);
+      expect(ok.headers['access-control-allow-origin']).toBe('https://app.example');
+      expect((await request(app).post('/mcp').set('Origin', 'https://evil.example').send(ping)).status).toBe(403);
+    });
 
-      expect(response.headers['x-correlation-id']).toBe(correlationId);
+    it('allows every origin with *', async () => {
+      const res = await request(makeApp({ corsOrigins: ['*'] })).post('/mcp').set('Origin', 'https://any.example').send(ping);
+      expect(res.status).toBe(200);
+      expect(res.headers['access-control-allow-origin']).toBe('*');
     });
   });
 
-  describe('MCP Request Handling', () => {
-    it('should handle valid MCP request successfully', async () => {
-      const app = transportHandler.getApp();
-      const mcpRequest: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 'test-1',
-        method: 'tools/list',
-        params: {}
-      };
-
-      const mcpResponse: MCPResponse = {
-        jsonrpc: '2.0',
-        id: 'test-1',
-        result: { tools: [] }
-      };
-
-      mockRequestHandler.mockResolvedValue(mcpResponse);
-
-      const response = await request(app)
-        .post('/mcp')
-        .send(mcpRequest)
-        .expect(200);
-
-      expect(response.body).toEqual(mcpResponse);
-      expect(mockRequestHandler).toHaveBeenCalledWith(mcpRequest);
-    });
-
-    it('should reject invalid MCP request format', async () => {
-      const app = transportHandler.getApp();
-      const invalidRequest = {
-        method: 'test',
-        // Missing required fields
-      };
-
-      const response = await request(app)
-        .post('/mcp')
-        .send(invalidRequest)
-        .expect(400);
-
-      expect(response.body).toEqual({
-        jsonrpc: '2.0',
-        id: expect.any(String), // correlation ID
-        error: {
-          code: MCPErrorCode.INVALID_REQUEST,
-          message: 'Invalid MCP request format'
-        }
-      });
-
-      expect(mockRequestHandler).not.toHaveBeenCalled();
-    });
-
-    it('should handle missing jsonrpc field', async () => {
-      const app = transportHandler.getApp();
-      const invalidRequest = {
-        id: 'test-1',
-        method: 'test'
-        // Missing jsonrpc field
-      };
-
-      await request(app)
-        .post('/mcp')
-        .send(invalidRequest)
-        .expect(400);
-    });
-
-    it('should handle missing id field (notifications)', async () => {
-      const app = transportHandler.getApp();
-      const notificationRequest = {
-        jsonrpc: '2.0',
-        method: 'test'
-        // Missing id field - this is valid for notifications
-      };
-
-      const mcpErrorResponse: MCPResponse = {
-        jsonrpc: '2.0',
-        id: 0, // Default id for notifications
-        error: {
-          code: MCPErrorCode.METHOD_NOT_FOUND,
-          message: "Method 'test' not found"
-        }
-      };
-
-      mockRequestHandler.mockResolvedValue(mcpErrorResponse);
-
-      // Notifications without id should be processed (though method 'test' will return method not found)
-      await request(app)
-        .post('/mcp')
-        .send(notificationRequest)
-        .expect(404); // Method 'test' not found, but request format is valid
-    });
-
-    it('should handle missing method field', async () => {
-      const app = transportHandler.getApp();
-      const invalidRequest = {
-        jsonrpc: '2.0',
-        id: 'test-1'
-        // Missing method field
-      };
-
-      await request(app)
-        .post('/mcp')
-        .send(invalidRequest)
-        .expect(400);
-    });
+  it('survives a handler slower than the request timeout', async () => {
+    const rejections: unknown[] = [];
+    const onRejection = (reason: unknown) => rejections.push(reason);
+    process.on('unhandledRejection', onRejection);
+    try {
+      const app = makeApp({ requestTimeout: 50, execute: () => new Promise(resolve => setTimeout(() => resolve('late'), 150)) });
+      const res = await request(app).post('/mcp').send({ jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'echo', arguments: {} } });
+      expect(res.status).toBe(408);
+      expect(res.body.id).toBeNull();
+      await new Promise(resolve => setTimeout(resolve, 200));
+      expect(rejections).toEqual([]);
+      expect(console.error).not.toHaveBeenCalledWith(expect.stringContaining('unhandled_error'));
+    } finally {
+      process.off('unhandledRejection', onRejection);
+    }
   });
 
-  describe('Error Response Handling', () => {
-    it('should return MCP error with appropriate HTTP status', async () => {
-      const app = transportHandler.getApp();
-      const mcpRequest: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 'test-1',
-        method: 'unknown/method'
-      };
-
-      const mcpErrorResponse: MCPResponse = {
-        jsonrpc: '2.0',
-        id: 'test-1',
-        error: {
-          code: MCPErrorCode.METHOD_NOT_FOUND,
-          message: 'Method not found'
-        }
-      };
-
-      mockRequestHandler.mockResolvedValue(mcpErrorResponse);
-
-      const response = await request(app)
-        .post('/mcp')
-        .send(mcpRequest)
-        .expect(404);
-
-      expect(response.body).toEqual(mcpErrorResponse);
-    });
-
-    it('should handle request handler throwing error', async () => {
-      const app = transportHandler.getApp();
-      const mcpRequest: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 'test-1',
-        method: 'test/method'
-      };
-
-      mockRequestHandler.mockRejectedValue(new Error('Handler error'));
-
-      const response = await request(app)
-        .post('/mcp')
-        .send(mcpRequest)
-        .expect(500);
-
-      expect(response.body).toEqual({
-        jsonrpc: '2.0',
-        id: 'test-1',
-        error: {
-          code: MCPErrorCode.INTERNAL_ERROR,
-          message: 'Internal server error'
-        }
-      });
-    });
-
-    it('should handle missing request handler', async () => {
-      const handlerWithoutRequestHandler = new HTTPTransportHandler(defaultConfig);
-      
-      const mcpRequest: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 'test-1',
-        method: 'test/method'
-      };
-
-      const response = await request(handlerWithoutRequestHandler.getApp())
-        .post('/mcp')
-        .send(mcpRequest)
-        .expect(500);
-
-      expect(response.body).toEqual({
-        jsonrpc: '2.0',
-        id: 'test-1',
-        error: {
-          code: MCPErrorCode.INTERNAL_ERROR,
-          message: 'MCP request handler not configured'
-        }
-      });
-    });
+  it('returns JSON, not HTML, from the error handler', async () => {
+    const res = await request(makeApp()).post('/mcp').set('Content-Type', 'application/json').send(JSON.stringify({ pad: 'x'.repeat(2 * 1024 * 1024) }));
+    expect(res.status).toBe(413);
+    expect(res.headers['content-type']).toMatch(/json/);
+    expect(res.text).not.toMatch(/<html|at \w+ \(/i);
   });
 
-  describe('HTTP Status Code Mapping', () => {
-    const testCases = [
-      { mcpCode: MCPErrorCode.PARSE_ERROR, httpStatus: 400 },
-      { mcpCode: MCPErrorCode.INVALID_REQUEST, httpStatus: 400 },
-      { mcpCode: MCPErrorCode.INVALID_PARAMS, httpStatus: 400 },
-      { mcpCode: MCPErrorCode.METHOD_NOT_FOUND, httpStatus: 404 },
-      { mcpCode: MCPErrorCode.INTERNAL_ERROR, httpStatus: 500 },
-      { mcpCode: -32001, httpStatus: 500 } // Custom server error
-    ];
-
-    testCases.forEach(({ mcpCode, httpStatus }) => {
-      it(`should map MCP error code ${mcpCode} to HTTP status ${httpStatus}`, async () => {
-        const app = transportHandler.getApp();
-        const mcpRequest: MCPRequest = {
-          jsonrpc: '2.0',
-          id: 'test-1',
-          method: 'test/method'
-        };
-
-        const mcpErrorResponse: MCPResponse = {
-          jsonrpc: '2.0',
-          id: 'test-1',
-          error: {
-            code: mcpCode,
-            message: 'Test error'
-          }
-        };
-
-        mockRequestHandler.mockResolvedValue(mcpErrorResponse);
-
-        await request(app)
-          .post('/mcp')
-          .send(mcpRequest)
-          .expect(httpStatus);
-      });
-    });
+  it('returns JSON 404 for unknown routes', async () => {
+    const res = await request(makeApp()).get('/nope');
+    expect(res.status).toBe(404);
+    expect(res.headers['content-type']).toMatch(/json/);
   });
 
-  describe('Route Handling', () => {
-    it('should return 404 for unknown routes', async () => {
-      const app = transportHandler.getApp();
-      
-      const response = await request(app)
-        .get('/unknown-route')
-        .expect(404);
-
-      expect(response.body).toEqual({
-        jsonrpc: '2.0',
-        id: expect.any(String), // correlation ID
-        error: {
-          code: MCPErrorCode.METHOD_NOT_FOUND,
-          message: 'Route not found: GET /unknown-route'
-        }
-      });
-    });
-
-    it('should handle POST requests to unknown routes', async () => {
-      const app = transportHandler.getApp();
-      
-      const response = await request(app)
-        .post('/unknown-route')
-        .send({ test: 'data' })
-        .expect(404);
-
-      expect(response.body).toEqual({
-        jsonrpc: '2.0',
-        id: expect.any(String),
-        error: {
-          code: MCPErrorCode.METHOD_NOT_FOUND,
-          message: expect.stringContaining('POST /unknown-route')
-        }
-      });
-    });
-  });
-
-  describe('Request Body Parsing', () => {
-    it('should parse JSON request body', async () => {
-      const app = transportHandler.getApp();
-      const mcpRequest: MCPRequest = {
-        jsonrpc: '2.0',
-        id: 'test-1',
-        method: 'test/method',
-        params: { key: 'value' }
-      };
-
-      const mcpResponse: MCPResponse = {
-        jsonrpc: '2.0',
-        id: 'test-1',
-        result: { success: true }
-      };
-
-      mockRequestHandler.mockResolvedValue(mcpResponse);
-
-      await request(app)
-        .post('/mcp')
-        .send(mcpRequest)
-        .expect(200);
-
-      expect(mockRequestHandler).toHaveBeenCalledWith(mcpRequest);
-    });
-
-    it('should handle malformed JSON', async () => {
-      const app = transportHandler.getApp();
-      
-      const response = await request(app)
-        .post('/mcp')
-        .set('Content-Type', 'application/json')
-        .send('{ invalid json }')
-        .expect(400);
-
-      expect(response.body.error).toBeDefined();
-    });
-  });
-
-  describe('Configuration Options', () => {
-    it('should respect CORS origins configuration', async () => {
-      const configWithCors: HTTPTransportConfig = {
-        ...defaultConfig,
-        corsOrigins: 'https://example.com'
-      };
-      
-      const handler = new HTTPTransportHandler(configWithCors);
-      const app = handler.getApp();
-
-      const response = await request(app)
-        .options('/mcp')
-        .set('Origin', 'https://example.com');
-
-      expect(response.headers['access-control-allow-origin']).toBe('https://example.com');
-    });
-
-    it('should handle array of CORS origins', async () => {
-      const configWithCors: HTTPTransportConfig = {
-        ...defaultConfig,
-        corsOrigins: ['https://example.com', 'https://test.com']
-      };
-      
-      const handler = new HTTPTransportHandler(configWithCors);
-      const app = handler.getApp();
-
-      const response = await request(app)
-        .options('/mcp')
-        .set('Origin', 'https://example.com');
-
-      // CORS middleware should handle the array properly
-      expect(response.status).toBe(204);
-      
-      await handler.stop();
-    });
+  it('fails to start with HTTPS enabled and no certificates', async () => {
+    const transport = new HTTPTransportHandler({ port: 0, https: { enabled: true } }, async () => undefined);
+    await expect(transport.start()).rejects.toThrow('HTTPS key and certificate paths are required');
   });
 });
